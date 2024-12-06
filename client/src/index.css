@@ -1,0 +1,75 @@
+@import url('https://rsms.me/inter/inter.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 214 60% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 214 60% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 214 60% 16%;
+    --primary: 214 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 214 100% 45%;
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 214 60% 16%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 214 20% 50%;
+    --accent: 210 20% 96%;
+    --accent-foreground: 214 60% 16%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 214 100% 50%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 214 60% 4%;
+    --foreground: 0 0% 100%;
+    --card: 214 50% 8%;
+    --card-foreground: 0 0% 100%;
+    --popover: 214 50% 8%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 214 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 214 100% 45%;
+    --secondary: 214 40% 12%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 214 40% 12%;
+    --muted-foreground: 214 20% 70%;
+    --accent: 214 40% 12%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 40% 16%;
+    --input: 214 40% 16%;
+    --ring: 214 100% 50%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+
+  /* Bluesky-specific utility classes */
+  .bsky-card {
+    @apply bg-card rounded-lg border border-border shadow-bsky p-4;
+  }
+
+  .bsky-input {
+    @apply w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1;
+  }
+
+  .bsky-button {
+    @apply px-4 py-2 font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary-hover transition-colors;
+  }
+}
