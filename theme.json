@@ -1,6 +1,7 @@
 {
   "variant": "professional",
-  "primary": "hsl(214, 100%, 50%)",
+  "primary": "hsl(210, 100%, 50%)",
+  "primary-hover": "hsl(210, 100%, 45%)",
   "appearance": "light",
   "radius": 0.5
 }

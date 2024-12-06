@@ -142,39 +142,86 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#f5f5f5] dark:bg-[#1a1a1a]">
-      <Card className="w-[90%] max-w-md p-8 bg-white dark:bg-[#222222] shadow-2xl hover:shadow-3xl transition-all duration-300 border-[#e5e5e5] dark:border-[#333333]">
-        <div className="space-y-6">
-          <div className="space-y-2 text-center">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#0085ff] to-[#00a2ff] bg-clip-text text-transparent">
-              Sign in with BlueSky
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Enter your account details below
-            </p>
+    <div className="min-h-screen flex">
+      {/* Left panel with blue background */}
+      <div className="flex-1 bg-[#F1F3F5] flex items-center justify-end p-8">
+        <div className="max-w-md w-full">
+          <div className="text-[#42576C] text-2xl font-extrabold text-right"></div>
+          <div className="text-[#1083FE] text-4xl font-extrabold text-right">Sign in</div>
+          <div className="text-[#42576C] text-lg font-semibold mt-3 max-w-[400px] text-right">
+            Enter your username and password
           </div>
+        </div>
+      </div>
 
+      {/* Right panel with form */}
+      <div className="flex-1 bg-white flex items-center justify-start p-8">
+        <div className="max-w-md w-full space-y-6">
           {!showTwoFactor ? (
             <Form {...loginForm}>
-              <form
-                onSubmit={loginForm.handleSubmit(onLoginSubmit)}
-                className="space-y-4"
-              >
+              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                {/* Hosting provider button */}
+                <div className="space-y-2">
+                  <FormLabel className="text-sm text-[#42576C] font-semibold">
+                    Hosting provider
+                  </FormLabel>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full justify-between bg-[#F1F3F5] hover:bg-[#E4E7EC] text-[#0B0F14]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        width="20"
+                        height="20"
+                        className="text-[#6F869F]"
+                      >
+                        <path
+                          fill="currentColor"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                          d="M4.062 11h2.961c.103-2.204.545-4.218 1.235-5.77.06-.136.123-.269.188-.399A8.007 8.007 0 0 0 4.062 11ZM12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2Zm0 2c-.227 0-.518.1-.868.432-.354.337-.719.872-1.047 1.61-.561 1.263-.958 2.991-1.06 4.958h5.95c-.102-1.967-.499-3.695-1.06-4.958-.328-.738-.693-1.273-1.047-1.61C12.518 4.099 12.227 4 12 4Zm4.977 7c-.103-2.204-.545-4.218-1.235-5.77a9.78 9.78 0 0 0-.188-.399A8.006 8.006 0 0 1 19.938 11h-2.961Zm-2.003 2H9.026c.101 1.966.498 3.695 1.06 4.958.327.738.692 1.273 1.046 1.61.35.333.641.432.868.432.227 0 .518-.1.868-.432.354-.337.719-.872 1.047-1.61.561-1.263.958-2.991 1.06-4.958Zm.58 6.169c.065-.13.128-.263.188-.399.69-1.552 1.132-3.566 1.235-5.77h2.961a8.006 8.006 0 0 1-4.384 6.169Zm-7.108 0a9.877 9.877 0 0 1-.188-.399c-.69-1.552-1.132-3.566-1.235-5.77H4.062a8.006 8.006 0 0 0 4.384 6.169Z"
+                        />
+                      </svg>
+                      Bluesky Social
+                    </div>
+                    <div className="bg-[#D4DBE2] p-1.5 rounded-lg">
+                      <svg
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        className="text-[#6F869F]"
+                      >
+                        <path
+                          fill="currentColor"
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                          d="M15.586 2.5a2 2 0 0 1 2.828 0L21.5 5.586a2 2 0 0 1 0 2.828l-13 13A2 2 0 0 1 7.086 22H3a1 1 0 0 1-1-1v-4.086a2 2 0 0 1 .586-1.414l13-13L17 3.914l-1.414.586ZM13 21a1 1 0 0 1 1-1h7a1 1 0 1 1 0 2h-7a1 1 0 0 1-1-1Z"
+                        />
+                      </svg>
+                    </div>
+                  </Button>
+                </div>
+
                 <FormField
                   control={loginForm.control}
                   name="identifier"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[#4a4a4a] dark:text-[#e5e5e5]">Username or Email</FormLabel>
+                      <FormLabel className="text-sm text-[#42576C] font-semibold">
+                        Username or email
+                      </FormLabel>
                       <FormControl>
                         <Input
                           {...field}
-                          type="text"
-                          placeholder="handle.bsky.social"
-                          className="bg-[#f9f9f9] dark:bg-[#2a2a2a] border-[#e5e5e5] dark:border-[#333333] focus:border-[#0085ff] dark:focus:border-[#00a2ff]"
+                          className="bg-[#F1F3F5] border-[#D4DBE2] focus:border-[#1083FE] focus:ring-[#1083FE]"
+                          disabled={isLoading}
                         />
                       </FormControl>
-                      <FormMessage className="text-[#ff4a4a]" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -184,67 +231,58 @@ export default function AuthPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[#4a4a4a] dark:text-[#e5e5e5]">Password</FormLabel>
+                      <FormLabel className="text-sm text-[#42576C] font-semibold">
+                        Password
+                      </FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           type="password"
-                          className="bg-[#f9f9f9] dark:bg-[#2a2a2a] border-[#e5e5e5] dark:border-[#333333] focus:border-[#0085ff] dark:focus:border-[#00a2ff]"
+                          className="bg-[#F1F3F5] border-[#D4DBE2] focus:border-[#1083FE] focus:ring-[#1083FE]"
+                          disabled={isLoading}
                         />
                       </FormControl>
-                      <FormMessage className="text-[#ff4a4a]" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
 
                 <Button
                   type="submit"
-                  className="w-full bg-[#0085ff] hover:bg-[#0075e0] text-white transition-all hover:scale-105"
+                  className="w-full bg-[#1083FE] hover:bg-[#0073E6] text-white font-semibold"
                   disabled={isLoading}
                 >
-                  {isLoading ? (
-                    <>
-                      <span className="mr-2">Signing in</span>
-                      <span className="animate-spin">⋯</span>
-                    </>
-                  ) : (
-                    "Sign In"
-                  )}
+                  {isLoading ? "Signing in..." : "Sign in"}
                 </Button>
               </form>
             </Form>
           ) : (
             <Form {...twoFactorForm}>
-              <form
-                onSubmit={twoFactorForm.handleSubmit(onTwoFactorSubmit)}
-                className="space-y-4"
-              >
-                <div className="space-y-2">
-                  <FormField
-                    control={twoFactorForm.control}
-                    name="code"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-[#4a4a4a] dark:text-[#e5e5e5]">Verification Code</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="XXXXX-XXXXX"
-                            {...field}
-                            className="bg-[#f9f9f9] dark:bg-[#2a2a2a] border-[#e5e5e5] dark:border-[#333333] focus:border-[#0085ff] dark:focus:border-[#00a2ff]"
-                          />
-                        </FormControl>
-                        <FormMessage className="text-[#ff4a4a]" />
-                      </FormItem>
-                    )}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Enter the code sent to your email (format: XXXXX-XXXXX)
-                  </p>
-                </div>
+              <form onSubmit={twoFactorForm.handleSubmit(onTwoFactorSubmit)} className="space-y-4">
+                <FormField
+                  control={twoFactorForm.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm text-[#42576C] font-semibold">
+                        Verification Code
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="XXXXX-XXXXX"
+                          className="bg-[#F1F3F5] border-[#D4DBE2] focus:border-[#1083FE] focus:ring-[#1083FE]"
+                          disabled={isLoading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <Button
                   type="submit"
-                  className="w-full bg-[#0085ff] hover:bg-[#0075e0] text-white"
+                  className="w-full bg-[#1083FE] hover:bg-[#0073E6] text-white font-semibold"
                   disabled={isLoading}
                 >
                   {isLoading ? "Verifying..." : "Verify"}
@@ -253,7 +291,7 @@ export default function AuthPage() {
             </Form>
           )}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
