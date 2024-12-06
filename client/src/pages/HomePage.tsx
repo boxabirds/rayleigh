@@ -9,6 +9,9 @@ export default function HomePage() {
         <div className="max-w-feed mx-auto h-full px-4 flex items-center justify-between">
           <h1 className="text-xl font-semibold text-primary">Rayleigh</h1>
           <div className="flex items-center space-x-4">
+            <a href="/search" className="text-muted-foreground hover:text-foreground transition-colors">
+              Search
+            </a>
             <ThemeToggle />
             <a href="/auth" className="text-muted-foreground hover:text-foreground transition-colors">
               Login
