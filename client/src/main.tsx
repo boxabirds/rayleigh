@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import SearchPage from "./pages/SearchPage";
+import CommunitySearchPage from "./pages/CommunitySearchPage";
 import { ThemeProvider } from "@/components/theme-provider";
 
 function Router() {
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/" component={HomePage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/search" component={SearchPage} />
+      <Route path="/community/ai" component={CommunitySearchPage} />
       <Route>404 Page Not Found</Route>
     </Switch>
   );
