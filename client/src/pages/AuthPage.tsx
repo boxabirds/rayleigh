@@ -142,12 +142,17 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-background bg-gradient-to-b from-background to-background/95">
-      <Card className="w-[90%] max-w-md p-8 shadow-xl hover:shadow-2xl transition-all duration-300 border-opacity-50">
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#f5f5f5] dark:bg-[#1a1a1a]">
+      <Card className="w-[90%] max-w-md p-8 bg-white dark:bg-[#222222] shadow-2xl hover:shadow-3xl transition-all duration-300 border-[#e5e5e5] dark:border-[#333333]">
         <div className="space-y-6">
-          <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
-            Sign in with BlueSky
-          </h1>
+          <div className="space-y-2 text-center">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#0085ff] to-[#00a2ff] bg-clip-text text-transparent">
+              Sign in with BlueSky
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Enter your account details below
+            </p>
+          </div>
 
           {!showTwoFactor ? (
             <Form {...loginForm}>
@@ -160,15 +165,16 @@ export default function AuthPage() {
                   name="identifier"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Username or Email</FormLabel>
+                      <FormLabel className="text-[#4a4a4a] dark:text-[#e5e5e5]">Username or Email</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           type="text"
                           placeholder="handle.bsky.social"
+                          className="bg-[#f9f9f9] dark:bg-[#2a2a2a] border-[#e5e5e5] dark:border-[#333333] focus:border-[#0085ff] dark:focus:border-[#00a2ff]"
                         />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-[#ff4a4a]" />
                     </FormItem>
                   )}
                 />
@@ -178,18 +184,22 @@ export default function AuthPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel className="text-[#4a4a4a] dark:text-[#e5e5e5]">Password</FormLabel>
                       <FormControl>
-                        <Input {...field} type="password" />
+                        <Input
+                          {...field}
+                          type="password"
+                          className="bg-[#f9f9f9] dark:bg-[#2a2a2a] border-[#e5e5e5] dark:border-[#333333] focus:border-[#0085ff] dark:focus:border-[#00a2ff]"
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-[#ff4a4a]" />
                     </FormItem>
                   )}
                 />
 
                 <Button
                   type="submit"
-                  className="w-full transition-all hover:scale-105"
+                  className="w-full bg-[#0085ff] hover:bg-[#0075e0] text-white transition-all hover:scale-105"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -215,14 +225,15 @@ export default function AuthPage() {
                     name="code"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Verification Code</FormLabel>
+                        <FormLabel className="text-[#4a4a4a] dark:text-[#e5e5e5]">Verification Code</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="XXXXX-XXXXX"
                             {...field}
+                            className="bg-[#f9f9f9] dark:bg-[#2a2a2a] border-[#e5e5e5] dark:border-[#333333] focus:border-[#0085ff] dark:focus:border-[#00a2ff]"
                           />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-[#ff4a4a]" />
                       </FormItem>
                     )}
                   />
@@ -233,7 +244,7 @@ export default function AuthPage() {
 
                 <Button
                   type="submit"
-                  className="w-full"
+                  className="w-full bg-[#0085ff] hover:bg-[#0075e0] text-white"
                   disabled={isLoading}
                 >
                   {isLoading ? "Verifying..." : "Verify"}
