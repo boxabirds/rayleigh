@@ -1,26 +1,18 @@
-import React, { useEffect } from 'react';
-import { useLocation } from 'wouter';
-import { useIsAuthenticated } from '../contexts/agent';
+import React from 'react';
+import { Route } from 'wouter';
+import { useRequireAuth } from '../hooks/useRequireAuth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  path: string;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const isAuthenticated = useIsAuthenticated();
-  const [location, setLocation] = useLocation();
+export function ProtectedRoute({ children, path }: ProtectedRouteProps) {
+  useRequireAuth();
   
-  useEffect(() => {
-    if (!isAuthenticated && location !== '/auth') {
-      const returnPath = encodeURIComponent(location);
-      setLocation(`/auth?return=${returnPath}`);
-    }
-  }, [isAuthenticated, location, setLocation]);
-  
-  // Don't render anything while redirecting to auth
-  if (!isAuthenticated) {
-    return null;
-  }
-  
-  return <>{children}</>;
+  return (
+    <Route path={path}>
+      {children}
+    </Route>
+  );
 }

@@ -6,7 +6,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AgentProvider } from "./contexts/agent";
-import { Router } from "./routes/Router";
+import Router from "./routes/Router";
 import { BskyAgent } from "@atproto/api";
 import { AgentProvider as AgentProviderContext } from "./contexts/agent";
 
