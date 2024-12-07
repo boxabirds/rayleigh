@@ -1,40 +1,32 @@
-import { StrictMode, useEffect } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { Switch, Route } from "wouter";
 import "./index.css";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
-import HomePage from "./pages/HomePage";
-import AuthPage from "./pages/AuthPage";
-import SearchPage from "./pages/SearchPage";
-import CommunitySearchPage from "./pages/CommunitySearchPage";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AgentProvider } from "./contexts/agent";
+import { Router } from "./routes/Router";
+import { BskyAgent } from "@atproto/api";
+import { AgentProvider as AgentProviderContext } from "./contexts/agent";
 
-function Router() {
-  useEffect(() => {
-    // Clear any stale data
-    localStorage.removeItem("vite-previous-port");
-  }, []);
+const agent = new BskyAgent({ service: "https://bsky.social" });
 
+function App() {
   return (
-    <Switch>
-      <Route path="/" component={HomePage} />
-      <Route path="/auth" component={AuthPage} />
-      <Route path="/search" component={SearchPage} />
-      <Route path="/community/ai" component={CommunitySearchPage} />
-      <Route>404 Page Not Found</Route>
-    </Switch>
+    <Router />
   );
 }
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider defaultTheme="system" enableSystem attribute="class">
-      <QueryClientProvider client={queryClient}>
-        <Router />
-        <Toaster />
-      </QueryClientProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light" storageKey="ui-theme">
+        <AgentProviderContext agent={agent}>
+          <Toaster />
+          <App />
+        </AgentProviderContext>
+      </ThemeProvider>
+    </QueryClientProvider>
   </StrictMode>,
 );
