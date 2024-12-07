@@ -3,7 +3,7 @@ interface RouteConfig {
   requiresAuth: boolean;
 }
 
-export const routes: Record<string, RouteConfig> = {
+const routes: Record<string, RouteConfig> = {
   home: {
     path: '/',
     requiresAuth: true,
@@ -11,6 +11,10 @@ export const routes: Record<string, RouteConfig> = {
   auth: {
     path: '/auth',
     requiresAuth: false,
+  },
+  community: {
+    path: '/community/:tag',
+    requiresAuth: true,
   },
   search: {
     path: '/search',
@@ -25,3 +29,5 @@ export const routes: Record<string, RouteConfig> = {
     requiresAuth: true,
   },
 };
+
+export default routes;
