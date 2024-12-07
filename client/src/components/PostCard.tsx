@@ -4,6 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 interface PostCardProps {
   post: PostView;
+  replies?: PostView[];
 }
 
 interface PostRecord {
@@ -23,7 +24,7 @@ interface EmbedView {
   images?: ImageEmbed['images'];
 }
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, replies = [] }: PostCardProps) {
   const timestamp = new Date(post.indexedAt);
   const record = post.record as PostRecord;
   const embed = post.embed as EmbedView | undefined;
@@ -34,7 +35,7 @@ export function PostCard({ post }: PostCardProps) {
         {post.author.avatar && (
           <img
             src={post.author.avatar}
-            alt={`${post.author.handle}'s avatar`}
+            alt={post.author.handle}
             className="w-10 h-10 rounded-full"
           />
         )}
@@ -46,21 +47,22 @@ export function PostCard({ post }: PostCardProps) {
             <span className="text-gray-500 dark:text-gray-400">
               @{post.author.handle}
             </span>
-            <span className="text-gray-500 dark:text-gray-400 text-sm">
-              · {formatDistanceToNow(timestamp)} ago
+            <span className="text-gray-500 dark:text-gray-400">·</span>
+            <span className="text-gray-500 dark:text-gray-400">
+              {formatDistanceToNow(timestamp, { addSuffix: true })}
             </span>
           </div>
-          <div className="mt-1 text-gray-900 dark:text-white whitespace-pre-wrap">
+          <p className="mt-1 text-gray-900 dark:text-white whitespace-pre-wrap">
             {record.text}
-          </div>
+          </p>
           {embed?.images && (
-            <div className="mt-3 grid gap-2 grid-cols-2">
+            <div className="mt-3 grid grid-cols-2 gap-2">
               {embed.images.map((image, index) => (
                 <img
                   key={index}
                   src={image.thumb}
                   alt={image.alt || ''}
-                  className="rounded-lg max-h-64 object-cover"
+                  className="rounded-lg max-h-64 w-full object-cover"
                 />
               ))}
             </div>
@@ -87,6 +89,14 @@ export function PostCard({ post }: PostCardProps) {
           </div>
         </div>
       </div>
+
+      {replies.length > 0 && (
+        <div className="mt-4 pl-8 space-y-4 border-l-2 border-gray-200 dark:border-gray-700">
+          {replies.map((reply) => (
+            <PostCard key={reply.uri} post={reply} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
