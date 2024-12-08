@@ -1,7 +1,11 @@
 import HelloWorld from "../components/HelloWorld";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ProfileMenu } from "@/components/ProfileMenu";
+import { useIsAuthenticated } from '../contexts/agent';
 
 export default function HomePage() {
+  const isAuthenticated = useIsAuthenticated();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Bluesky-style header */}
@@ -13,9 +17,13 @@ export default function HomePage() {
               Search
             </a>
             <ThemeToggle />
-            <a href="/auth" className="text-muted-foreground hover:text-foreground transition-colors">
-              Login
-            </a>
+            {isAuthenticated ? (
+              <ProfileMenu />
+            ) : (
+              <a href="/auth" className="text-muted-foreground hover:text-foreground transition-colors">
+                Login
+              </a>
+            )}
           </div>
         </div>
       </header>

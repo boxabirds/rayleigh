@@ -1,10 +1,11 @@
-import React, { createContext, useContext, ReactNode, useEffect, useState } from 'react';
+import React, { createContext, useContext, ReactNode, useEffect, useState, useCallback } from 'react';
 import { BskyAgent } from '@atproto/api';
 
 interface AgentContextValue {
   agent: BskyAgent;
   isAuthenticated: boolean;
   setIsAuthenticated: (value: boolean) => void;
+  refreshSession: () => Promise<void>;
 }
 
 const AgentContext = createContext<AgentContextValue | null>(null);
@@ -33,6 +34,14 @@ export function useSetIsAuthenticated() {
   return context.setIsAuthenticated;
 }
 
+export function useRefreshSession() {
+  const context = useContext(AgentContext);
+  if (!context) {
+    throw new Error('useRefreshSession must be used within an AgentProvider');
+  }
+  return context.refreshSession;
+}
+
 interface AgentProviderProps {
   children: ReactNode;
   agent: BskyAgent;
@@ -42,36 +51,45 @@ export function AgentProvider({ children, agent }: AgentProviderProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  useEffect(() => {
-    // Try to restore session on mount
+  const refreshSession = useCallback(async () => {
     const sessionStr = localStorage.getItem('bsky-session');
-    if (sessionStr) {
-      try {
-        const session = JSON.parse(sessionStr);
-        agent.resumeSession(session)
-          .then(() => {
-            setIsAuthenticated(true);
-            setIsInitialized(true);
-          })
-          .catch(() => {
-            localStorage.removeItem('bsky-session');
-            setIsAuthenticated(false);
-            setIsInitialized(true);
-          });
-      } catch {
-        localStorage.removeItem('bsky-session');
-        setIsAuthenticated(false);
-        setIsInitialized(true);
-      }
-    } else {
-      setIsInitialized(true);
+    if (!sessionStr) {
+      setIsAuthenticated(false);
+      return;
+    }
+
+    try {
+      const session = JSON.parse(sessionStr);
+      await agent.resumeSession(session);
+      // After successful resume, store the updated session
+      localStorage.setItem('bsky-session', JSON.stringify(agent.session));
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error('Failed to refresh session:', error);
+      localStorage.removeItem('bsky-session');
+      setIsAuthenticated(false);
     }
   }, [agent]);
+
+  useEffect(() => {
+    // Try to restore session on mount
+    refreshSession().finally(() => {
+      setIsInitialized(true);
+    });
+
+    // Refresh session every 10 minutes
+    const intervalId = setInterval(refreshSession, 10 * 60 * 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [refreshSession]);
 
   const contextValue = {
     agent,
     isAuthenticated,
     setIsAuthenticated,
+    refreshSession,
   };
 
   // Don't render children until we've checked the session
