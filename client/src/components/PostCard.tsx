@@ -15,7 +15,9 @@ interface PostRecord {
 interface ImageEmbed {
   images: Array<{
     thumb: string;
+    fullsize: string;
     alt?: string;
+    type?: string;
   }>;
 }
 
@@ -57,14 +59,17 @@ export function PostCard({ post, replies = [] }: PostCardProps) {
           </p>
           {embed?.images && (
             <div className="mt-3 grid grid-cols-2 gap-2">
-              {embed.images.map((image, index) => (
-                <img
-                  key={index}
-                  src={image.thumb}
-                  alt={image.alt || ''}
-                  className="rounded-lg max-h-64 w-full object-cover"
-                />
-              ))}
+              {embed.images.map((image, index) => {
+                const isGif = image.type === 'image/gif';
+                return (
+                  <img
+                    key={index}
+                    src={isGif ? image.fullsize : image.thumb}
+                    alt={image.alt || ''}
+                    className="rounded-lg max-h-64 w-full object-cover"
+                  />
+                );
+              })}
             </div>
           )}
           <div className="mt-3 flex items-center space-x-4 text-gray-500 dark:text-gray-400">
