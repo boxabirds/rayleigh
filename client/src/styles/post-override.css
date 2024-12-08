@@ -1,0 +1,6 @@
+/* Override bsky-react-post SVG styles to use React-compatible properties */
+.bsky-post svg * {
+  stop-color: currentColor;
+  fill-rule: evenodd;
+  clip-rule: evenodd;
+}

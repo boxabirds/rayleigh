@@ -1,6 +1,15 @@
 import { createContext, useContext, useEffect, useState } from "react"
 import { ThemeProvider as NextThemesProvider, type ThemeProviderProps as NextThemeProviderProps } from "next-themes"
 
+type Theme = 'dark' | 'light' | 'system'
+
+interface ThemeContextType {
+  theme: Theme
+  setTheme: (theme: Theme) => void
+}
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
+
 type ThemeProviderProps = {
   children: React.ReactNode
   defaultTheme?: string
@@ -40,4 +49,12 @@ export function ThemeProvider({
       {children}
     </NextThemesProvider>
   )
+}
+
+export function useTheme() {
+  const context = useContext(ThemeContext)
+  if (context === undefined) {
+    throw new Error('useTheme must be used within a ThemeProvider')
+  }
+  return context
 }

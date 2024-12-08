@@ -24,8 +24,8 @@ const routes: Record<string, RouteConfig> = {
     path: '/search/ai',
     requiresAuth: true,
   },
-  aiCommunity: {
-    path: '/community/ai',
+  thread: {
+    path: '/thread/:threadId',
     requiresAuth: true,
   },
 };

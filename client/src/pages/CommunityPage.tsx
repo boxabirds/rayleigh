@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { PostView } from '@atproto/api/dist/client/types/app/bsky/feed/defs';
 import { useRequireAuth } from '../hooks/useRequireAuth';
-import { rollupThreads, ThreadRollupResult } from '../utils/threadRollup';
-import { PostCard } from '../components/PostCard';
-import { useParams } from 'wouter';
+import { rollupThreads } from '../utils/threadRollup';
+import { useParams, useLocation } from 'wouter';
 import { ThemeToggle } from '../components/theme-toggle';
+import { PostCard } from '../components/PostCard';
 
 interface Thread {
   rootPost: PostView;
@@ -15,8 +15,10 @@ interface Thread {
 export default function CommunityPage() {
   const agent = useRequireAuth();
   const { tag } = useParams<{ tag: string }>();
+  const [, navigate] = useLocation();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
 
@@ -24,45 +26,30 @@ export default function CommunityPage() {
     if (!agent || isLoading || !hasMore || !tag) return;
     
     setIsLoading(true);
+    setError(null);
     try {
-      const params: {
-        q: string;
-        limit: number;
-        cursor?: string;
-      } = {
+      const response = await agent.api.app.bsky.feed.searchPosts({
         q: `#${tag}`,
-        limit: 50, // Fetch more to account for replies
-      };
+        limit: 50,
+        cursor: cursor,
+      });
       
-      if (cursor) {
-        params.cursor = cursor;
-      }
-      
-      const response = await agent.api.app.bsky.feed.searchPosts(params);
-      
-      // Roll up threads, including existing ones for proper merging
       const result = rollupThreads(response.data.posts, threads);
       
-      // Keep all threads, limited to 25 per page
       setThreads(prevThreads => {
-        // Create a map of existing threads by root URI for quick lookup
         const existingThreadMap = new Map(prevThreads.map(t => [t.rootPost.uri, t]));
         
-        // Merge new threads with existing ones
         result.threads.forEach(newThread => {
           const existingThread = existingThreadMap.get(newThread.rootPost.uri);
           if (existingThread) {
-            // Update existing thread if new one is more recent
             if (new Date(newThread.latestUpdate) > new Date(existingThread.latestUpdate)) {
               existingThreadMap.set(newThread.rootPost.uri, newThread);
             }
           } else {
-            // Add new thread
             existingThreadMap.set(newThread.rootPost.uri, newThread);
           }
         });
 
-        // Convert back to array and sort by latest update
         return Array.from(existingThreadMap.values())
           .sort((a, b) => new Date(b.latestUpdate).getTime() - new Date(a.latestUpdate).getTime());
       });
@@ -71,80 +58,95 @@ export default function CommunityPage() {
       setHasMore(!!response.data.cursor);
     } catch (error) {
       console.error('Error fetching posts:', error);
+      setError('Failed to load posts. Please try again.');
       setHasMore(false);
     } finally {
       setIsLoading(false);
     }
   }, [agent, isLoading, hasMore, cursor, threads, tag]);
 
-  // Initial load
+  const handleThreadClick = useCallback((thread: Thread) => {
+    const postId = thread.rootPost.uri.split('/').pop() || '';
+    const threadPath = `${thread.rootPost.author.handle}/${postId}`;
+    navigate(`/thread/${encodeURIComponent(threadPath)}`);
+  }, [navigate]);
+
   React.useEffect(() => {
     if (agent && threads.length === 0 && tag) {
       fetchPosts();
     }
   }, [agent, fetchPosts, threads.length, tag]);
 
-  // Reset state when tag changes
   React.useEffect(() => {
     setThreads([]);
     setCursor(undefined);
     setHasMore(true);
+    setError(null);
   }, [tag]);
 
   if (!tag) {
-    return <div>Invalid community tag</div>;
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-4xl font-bold">Community</h1>
+            <ThemeToggle />
+          </div>
+          <p className="text-muted-foreground">No tag selected.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">#{tag} Community</h1>
-        <ThemeToggle />
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold">#{tag}</h1>
+          <ThemeToggle />
+        </div>
+
+        {error && (
+          <div className="text-red-500 mb-4">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {threads.map((thread) => (
+            <div 
+              key={thread.rootPost.uri}
+              onClick={() => handleThreadClick(thread)}
+              className="cursor-pointer transition-colors hover:bg-accent/50 rounded-lg"
+            >
+              <PostCard 
+                post={thread.rootPost} 
+                replies={thread.children}
+              />
+            </div>
+          ))}
+
+          {isLoading && (
+            <div className="animate-pulse space-y-4">
+              <div className="h-24 bg-accent rounded-lg"></div>
+              <div className="h-24 bg-accent rounded-lg"></div>
+            </div>
+          )}
+
+          {!isLoading && threads.length === 0 && (
+            <p className="text-muted-foreground">No posts found for #{tag}</p>
+          )}
+
+          {hasMore && !isLoading && (
+            <button
+              onClick={() => fetchPosts()}
+              className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Load more
+            </button>
+          )}
+        </div>
       </div>
-      
-      {threads.length === 0 && !isLoading && (
-        <div className="text-center py-8">
-          <p className="text-gray-600 dark:text-gray-400 mb-4">No posts found in this community.</p>
-          <button
-            onClick={() => {
-              setThreads([]);
-              setCursor(undefined);
-              setHasMore(true);
-              void fetchPosts();
-            }}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-          >
-            Check for New Posts
-          </button>
-        </div>
-      )}
-
-      <div className="space-y-4">
-        {threads.map((thread) => (
-          <PostCard
-            key={thread.rootPost.uri}
-            post={thread.rootPost}
-            replies={thread.children}
-          />
-        ))}
-      </div>
-
-      {hasMore && !isLoading && threads.length > 0 && (
-        <div className="text-center mt-8">
-          <button
-            onClick={() => void fetchPosts()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-          >
-            Load More
-          </button>
-        </div>
-      )}
-
-      {isLoading && (
-        <div className="text-center py-8">
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      )}
     </div>
   );
 }
