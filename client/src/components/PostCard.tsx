@@ -94,14 +94,6 @@ export function PostCard({ post, replies = [] }: PostCardProps) {
           </div>
         </div>
       </div>
-
-      {replies.length > 0 && (
-        <div className="mt-4 pl-8 space-y-4 border-l-2 border-gray-200 dark:border-gray-700">
-          {replies.map((reply) => (
-            <PostCard key={reply.uri} post={reply} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
