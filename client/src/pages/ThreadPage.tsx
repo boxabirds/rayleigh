@@ -35,6 +35,13 @@ async function loadThread(agent: BskyAgent, uri: string): Promise<Thread | null>
           replies.push(reply.post as PostView);
         }
       });
+      
+      // Sort replies by creation time, oldest first
+      replies.sort((a, b) => {
+        const timeA = new Date(a.indexedAt).getTime();
+        const timeB = new Date(b.indexedAt).getTime();
+        return timeA - timeB;
+      });
     }
 
     return {
