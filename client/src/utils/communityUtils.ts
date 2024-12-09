@@ -6,9 +6,59 @@ export interface CommunityPost {
   latestReplyAt: string;
 }
 
+export interface Community {
+  uri: string;
+  cid: string;
+  name: string;
+  description: string;
+  tag: string;
+  createdAt: string;
+  visibility: 'public' | 'private';
+  rules?: string[];
+}
+
+export interface CommunityMember {
+  did: string;
+  handle: string;
+  displayName?: string;
+  role: 'member' | 'moderator' | 'admin';
+  joinedAt: string;
+}
+
 export interface GetParentPostsResult {
   posts: CommunityPost[];
   cursor?: string;
+}
+
+export async function createCommunity(
+  agent: BskyAgent,
+  name: string,
+  description: string,
+  tag: string,
+  visibility: 'public' | 'private' = 'public',
+  rules?: string[]
+): Promise<Community> {
+  const record = {
+    $type: 'app.rayleigh.community',
+    name,
+    description,
+    tag,
+    visibility,
+    rules,
+    createdAt: new Date().toISOString()
+  };
+
+  const response = await agent.api.com.atproto.repo.createRecord({
+    repo: agent.session?.did || '',
+    collection: 'app.rayleigh.community',
+    record
+  });
+
+  return {
+    uri: response.uri,
+    cid: response.cid,
+    ...record
+  } as Community;
 }
 
 export async function getParentPosts(
