@@ -144,12 +144,7 @@ describe('threadUtils integration', () => {
     ];
 
     for (const uri of badUris) {
-      try {
-        await loadThread(agent, uri);
-        fail('Should have thrown an error for malformed URI');
-      } catch (error) {
-        expect(error).toBeDefined();
-      }
+      await expect(loadThread(agent, uri)).rejects.toThrow('Invalid thread URI');
     }
   });
 });

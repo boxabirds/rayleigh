@@ -80,7 +80,7 @@ describe('threadUtils', () => {
 
     it('should handle API errors', async () => {
       mockAgent.api.app.bsky.feed.getPostThread.mockRejectedValue(new Error('API Error'));
-      await expect(loadThread(mockAgent, 'did:plc:abc/app.bsky.feed.post/123')).rejects.toThrow();
+      await expect(loadThread(mockAgent, 'did:plc:abc/app.bsky.feed.post/123')).rejects.toThrow('Failed to fetch thread from server');
     });
   });
 });
