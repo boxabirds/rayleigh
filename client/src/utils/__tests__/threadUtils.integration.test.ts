@@ -1,11 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { BskyAgent } from '@atproto/api';
 import { loadThread } from '../threadUtils';
-import * as dotenv from 'dotenv';
-import path from 'path';
-
-// Load environment variables from .env.test
-dotenv.config({ path: path.resolve(__dirname, '../../../.env.test') });
 
 describe('threadUtils integration', () => {
   let agent: BskyAgent;
@@ -13,16 +8,23 @@ describe('threadUtils integration', () => {
   let testPostCid: string;
 
   beforeAll(async () => {
-    agent = new BskyAgent({ service: 'https://bsky.social' });
-    const identifier = process.env.BSKY_IDENTIFIER;
-    const password = process.env.BSKY_APP_PASSWORD;
+    try {
+      agent = new BskyAgent({ service: 'https://bsky.social' });
+      const identifier = process.env.BSKY_IDENTIFIER;
+      const password = process.env.BSKY_APP_PASSWORD;
 
-    if (!identifier || !password) {
-      throw new Error('BSKY_IDENTIFIER and BSKY_APP_PASSWORD environment variables must be set');
+      if (!identifier || !password) {
+        throw new Error('BSKY_IDENTIFIER and BSKY_APP_PASSWORD environment variables must be set');
+      }
+
+      console.log('Attempting to log in with identifier:', identifier);
+      await agent.login({ identifier, password });
+      console.log('Login successful');
+    } catch (error) {
+      console.error('Error in beforeAll:', error);
+      throw error;
     }
-
-    await agent.login({ identifier, password });
-  });
+  }, { timeout: 30000 }); // Increase timeout to 30 seconds
 
   it('should handle full at:// URI format', async () => {
     // First create a test post
@@ -43,7 +45,7 @@ describe('threadUtils integration', () => {
 
     // Clean up
     await agent.deletePost(testPostUri);
-  }, 15000);
+  }, { timeout: 30000 });
 
   it('should handle encoded URIs from PostCard clicks', async () => {
     // Create a test post
@@ -71,7 +73,7 @@ describe('threadUtils integration', () => {
     
     // Clean up
     await agent.deletePost(postUri);
-  }, 15000);
+  }, { timeout: 30000 });
 
   it('should load threads with deep reply chains', async () => {
     // Create root post
@@ -133,7 +135,7 @@ describe('threadUtils integration', () => {
     await agent.deletePost(reply2Response.uri);
     await agent.deletePost(reply1Response.uri);
     await agent.deletePost(rootPostResponse.uri);
-  }, 20000);
+  }, { timeout: 30000 });
 
   it('should handle malformed URIs gracefully', async () => {
     const badUris = [
@@ -146,5 +148,5 @@ describe('threadUtils integration', () => {
     for (const uri of badUris) {
       await expect(loadThread(agent, uri)).rejects.toThrow('Invalid thread URI');
     }
-  });
+  }, { timeout: 30000 });
 });

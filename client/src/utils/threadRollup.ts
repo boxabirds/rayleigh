@@ -26,13 +26,17 @@ export interface ThreadRollupResult {
   threads: Thread[];
 }
 
-export function rollupThreads(posts: PostView[], existingThreads: Thread[] = []): ThreadRollupResult {
+export function rollupThreads(posts: PostView[], existingThreads: Thread[] = [], tag: string): ThreadRollupResult {
   const postMap = new Map<string, PostView>();
   const threadMap = new Map<string, Thread>();
   
   // First, initialize threadMap with existing threads
   existingThreads.forEach(thread => {
-    threadMap.set(thread.rootPost.uri, thread);
+    threadMap.set(thread.rootPost.uri, {
+      rootPost: thread.rootPost,
+      children: [...thread.children], // Create a new array to avoid modifying the original
+      latestUpdate: thread.latestUpdate
+    });
   });
 
   // Build map of all posts
@@ -42,51 +46,73 @@ export function rollupThreads(posts: PostView[], existingThreads: Thread[] = [])
 
   // Process each post
   posts.forEach(post => {
-    let currentPost = post;
-    let rootPost: PostView | undefined;
-    
-    // Find the root post by traversing up
-    while (currentPost.reply && isReplyRef(currentPost.reply)) {
-      const parentUri = currentPost.reply.parent.uri;
-      const parent = postMap.get(parentUri);
-      if (!parent) {
-        // If we can't find the parent in our current batch,
-        // check if it's the root of an existing thread
-        const existingThread = threadMap.get(parentUri);
-        if (existingThread) {
-          rootPost = existingThread.rootPost;
+    // Skip if this post doesn't have the community tag
+    const postText = (post.record as any).text.toLowerCase();
+    const hasTag = postText.includes(`#${tag.toLowerCase()}`);
+    if (!hasTag) {
+      return;
+    }
+
+    // If this is a reply, try to find its thread
+    if (post.reply && isReplyRef(post.reply)) {
+      const rootUri = post.reply.root.uri;
+      let thread = threadMap.get(rootUri);
+
+      // If we found a thread and this post isn't already in its children
+      if (thread && !thread.children.some(child => child.uri === post.uri)) {
+        thread.children.push(post);
+        if (new Date(post.indexedAt) > new Date(thread.latestUpdate)) {
+          thread.latestUpdate = post.indexedAt;
         }
-        break;
       }
-      currentPost = parent;
-      rootPost = currentPost;
+      return;
     }
 
-    // If no root post found, this post is itself a root
-    if (!rootPost) {
-      rootPost = post;
-    }
-
-    // Get or create thread
-    let thread = threadMap.get(rootPost.uri);
+    // This is a root post, get or create its thread
+    let thread = threadMap.get(post.uri);
     if (!thread) {
       thread = {
-        rootPost,
+        rootPost: post,
         children: [],
-        latestUpdate: rootPost.indexedAt
+        latestUpdate: post.indexedAt
       };
-      threadMap.set(rootPost.uri, thread);
+      threadMap.set(post.uri, thread);
     }
 
-    // Add post to thread if it's not the root
-    if (post.uri !== rootPost.uri) {
-      thread.children.push(post);
-    }
+    // Process all posts to find children of this root post
+    posts.forEach(potentialChild => {
+      if (potentialChild.uri === post.uri) return; // Skip the root post itself
+      
+      // Check if child post has the tag
+      const childText = (potentialChild.record as any).text.toLowerCase();
+      const childHasTag = childText.includes(`#${tag.toLowerCase()}`);
+      if (!childHasTag) return;
 
-    // Update thread's latest timestamp if needed
-    if (new Date(post.indexedAt) > new Date(thread.latestUpdate)) {
-      thread.latestUpdate = post.indexedAt;
-    }
+      // Check if this post is already in the thread's children
+      if (thread.children.some(child => child.uri === potentialChild.uri)) {
+        return;
+      }
+
+      let currentPost = potentialChild;
+      while (currentPost.reply && isReplyRef(currentPost.reply)) {
+        if (currentPost.reply.root.uri === post.uri) {
+          // This is a descendant of our root post
+          thread.children.push(potentialChild);
+          
+          // Update thread's latest timestamp if needed
+          if (new Date(potentialChild.indexedAt) > new Date(thread.latestUpdate)) {
+            thread.latestUpdate = potentialChild.indexedAt;
+          }
+          break;
+        }
+        
+        const parentUri = currentPost.reply.parent.uri;
+        currentPost = postMap.get(parentUri) || currentPost;
+        
+        // If we can't find the parent in our current batch, stop traversing
+        if (!postMap.has(parentUri)) break;
+      }
+    });
   });
 
   // Convert to array and sort by latest update
