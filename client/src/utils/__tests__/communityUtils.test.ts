@@ -37,7 +37,14 @@ describe('communityUtils', () => {
         {
           uri: 'post2',
           cid: 'cid2',
-          record: { text: 'Reply post #test', $type: 'app.bsky.feed.post' },
+          record: { 
+            text: 'Reply post #test', 
+            $type: 'app.bsky.feed.post',
+            reply: {
+              root: { uri: 'post1', cid: 'cid1' },
+              parent: { uri: 'post1', cid: 'cid1' }
+            }
+          },
           reply: {
             root: { uri: 'post1', cid: 'cid1' },
             parent: { uri: 'post1', cid: 'cid1' }
@@ -69,6 +76,12 @@ describe('communityUtils', () => {
       });
 
       const result = await getParentPosts(mockAgent, 'test');
+
+      console.log('Posts returned:', result.posts.map(p => ({
+        uri: p.post.uri,
+        text: (p.post.record as any).text,
+        hasReply: !!p.post.reply
+      })));
 
       expect(result.posts).toHaveLength(1);
       expect(result.posts[0].post.uri).toBe('post1');
@@ -102,7 +115,14 @@ describe('communityUtils', () => {
         {
           uri: 'post3',
           cid: 'cid3',
-          record: { text: 'Reply to old', $type: 'app.bsky.feed.post' },
+          record: { 
+            text: 'Reply to old', 
+            $type: 'app.bsky.feed.post',
+            reply: {
+              root: { uri: 'post1', cid: 'cid1' },
+              parent: { uri: 'post1', cid: 'cid1' }
+            }
+          },
           reply: {
             root: { uri: 'post1', cid: 'cid1' },
             parent: { uri: 'post1', cid: 'cid1' }
@@ -123,6 +143,12 @@ describe('communityUtils', () => {
       });
 
       const result = await getParentPosts(mockAgent, 'test');
+
+      console.log('Posts returned:', result.posts.map(p => ({
+        uri: p.post.uri,
+        text: (p.post.record as any).text,
+        hasReply: !!p.post.reply
+      })));
 
       expect(result.posts).toHaveLength(2);
       expect(result.posts[0].post.uri).toBe('post2'); // Most recent post
@@ -149,6 +175,12 @@ describe('communityUtils', () => {
       });
 
       const result = await getParentPosts(mockAgent, 'test', undefined, 10);
+
+      console.log('Posts returned:', result.posts.map(p => ({
+        uri: p.post.uri,
+        text: (p.post.record as any).text,
+        hasReply: !!p.post.reply
+      })));
 
       expect(result.posts).toHaveLength(10);
     });

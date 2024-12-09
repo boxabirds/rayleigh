@@ -27,7 +27,7 @@ function isThreadViewPost(post: unknown): post is ThreadViewPost {
   );
 }
 
-function collectReplies(thread: unknown, replies: PostView[]) {
+function collectReplies(thread: unknown, replies: PostView[], seen = new Set<string>()) {
   if (!isThreadViewPost(thread)) {
     return;
   }
@@ -38,8 +38,13 @@ function collectReplies(thread: unknown, replies: PostView[]) {
 
   for (const reply of thread.replies) {
     if (isThreadViewPost(reply) && reply.post) {
+      // Skip if we've already seen this post
+      if (seen.has(reply.post.uri)) {
+        continue;
+      }
+      seen.add(reply.post.uri);
       replies.push(reply.post);
-      collectReplies(reply, replies);
+      collectReplies(reply, replies, seen);
     }
   }
 }
@@ -62,10 +67,22 @@ export async function loadThread(agent: BskyAgent, uri: string): Promise<Thread>
   }
 
   try {
+    // Validate URI format first
+    if (!uri.includes('/')) {
+      throw new ThreadLoadError('Invalid thread URI');
+    }
+
     // Convert did:plc: format to at:// format
     const atUri = uri.startsWith('did:plc:') ? 
       `at://${uri}` : 
       uri;
+
+    // Validate URI parts
+    try {
+      parseAtUri(atUri.replace('at://', ''));
+    } catch (error) {
+      throw new ThreadLoadError('Invalid thread URI');
+    }
 
     const threadResponse = await agent.api.app.bsky.feed.getPostThread({
       uri: atUri,
