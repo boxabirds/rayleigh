@@ -41,10 +41,11 @@ export async function getParentPosts(
 
   // Update latestReplyAt based on replies
   response.data.posts.forEach(post => {
-    if (!post.reply) return;
+    const reply = post.reply as ReplyRef;
+    if (!reply) return;
 
     // Find the root post if it's in our filtered set
-    const parentPost = communityPosts.find(p => post.reply?.root?.uri === p.post.uri);
+    const parentPost = communityPosts.find(p => reply.root.uri === p.post.uri);
 
     if (parentPost && new Date(post.indexedAt) > new Date(parentPost.latestReplyAt)) {
       parentPost.latestReplyAt = post.indexedAt;
