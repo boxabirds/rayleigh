@@ -1,64 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { useParams, useLocation } from 'wouter';
-import { PostView, ThreadViewPost } from '@atproto/api/dist/client/types/app/bsky/feed/defs';
+import { PostView } from '@atproto/api/dist/client/types/app/bsky/feed/defs';
+import { AppBskyFeedPost } from '@atproto/api';
 import { PostCard } from '../components/PostCard';
-import { BskyAgent } from '@atproto/api';
+import { loadThread, ThreadPresentation } from '../utils/threadPresentation';
 
-interface Thread {
-  rootPost: PostView;
-  replies: PostView[];
-}
-
-async function loadThread(agent: BskyAgent, uri: string): Promise<Thread | null> {
-  try {
-    const threadResponse = await agent.getPostThread({ uri });
-    
-    if (!threadResponse.success || !threadResponse.data.thread) {
-      throw new ThreadLoadError('Thread not found');
-    }
-
-    const thread = threadResponse.data.thread;
-    if (thread.notFound || !('post' in thread)) {
-      throw new ThreadLoadError('Thread not found');
-    }
-
-    console.log('Thread response:', JSON.stringify(threadResponse.data.thread, null, 2));
-
-    const rootPost = thread.post as PostView;
-    const replies: PostView[] = [];
-
-    // Extract replies if they exist
-    if ('replies' in thread && Array.isArray(thread.replies)) {
-      thread.replies.forEach(reply => {
-        if ('post' in reply) {
-          replies.push(reply.post as PostView);
-        }
-      });
-      
-      // Sort replies by creation time, oldest first
-      replies.sort((a, b) => {
-        const timeA = new Date(a.indexedAt).getTime();
-        const timeB = new Date(b.indexedAt).getTime();
-        return timeA - timeB;
-      });
-    }
-
-    return {
-      rootPost,
-      replies
-    };
-  } catch (error) {
-    console.error('Error in loadThread:', error);
-    throw error;
-  }
-}
-
-class ThreadLoadError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ThreadLoadError';
-  }
+interface ThreadState {
+  presentation: ThreadPresentation | null;
+  loading: boolean;
+  error: string | null;
 }
 
 export function ThreadPage() {
@@ -74,10 +25,11 @@ export function ThreadPage() {
     hasAgent: !!agent,
   });
 
-  const [thread, setThread] = useState<Thread | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
+  const [state, setState] = useState<ThreadState>({
+    presentation: null,
+    loading: true,
+    error: null
+  });
 
   const handleBack = () => {
     window.history.back();
@@ -85,7 +37,7 @@ export function ThreadPage() {
 
   const handleRetry = () => {
     console.log('handleRetry start');
-    setRetryCount(count => count + 1);
+    setState(prev => ({ ...prev, loading: true, error: null }));
   };
 
   const BackButton = () => (
@@ -106,34 +58,33 @@ export function ThreadPage() {
       console.log('fetchThread start');
       if (!threadId) {
         console.log('No threadId');
-        setError('No thread ID provided');
-        setLoading(false);
+        setState(prev => ({ ...prev, error: 'No thread ID provided', loading: false }));
         return;
       }
 
       if (!agent) {
         console.log('No agent');
-        setError('Please sign in to view threads');
-        setLoading(false);
+        setState(prev => ({ ...prev, error: 'Please sign in to view threads', loading: false }));
         return;
       }
 
       try {
-        setError(null);
-        setLoading(true);
+        setState(prev => ({ ...prev, error: null, loading: true }));
         
         // Parse handle/postId format
         const decodedPath = decodeURIComponent(threadId);
         const [handle, postId] = decodedPath.split('/');
         
         if (!handle || !postId) {
-          throw new Error('Invalid thread path');
+          setState(prev => ({ ...prev, error: 'Invalid thread path', loading: false }));
+          return;
         }
 
         // First resolve the DID
         const profile = await agent.getProfile({ actor: handle });
         if (!profile.success) {
-          throw new Error('Could not resolve profile');
+          setState(prev => ({ ...prev, error: 'Could not find user profile', loading: false }));
+          return;
         }
 
         // Construct the AT URI
@@ -146,30 +97,39 @@ export function ThreadPage() {
           fullUri 
         });
         
-        const threadData = await loadThread(agent, fullUri);
-        console.log('Thread loaded:', threadData);
+        const presentation = await loadThread(agent, fullUri);
+        console.log('Thread loaded:', {
+          hasPresentation: !!presentation,
+          parentPostUri: presentation?.parentPost?.uri,
+          parentPostText: presentation?.parentPost ? (presentation.parentPost.record as any).text : null,
+          directChildrenCount: presentation?.directChildren?.length,
+          directChildren: presentation?.directChildren?.map(dc => ({
+            uri: dc.post.uri,
+            text: (dc.post.record as any).text,
+            firstChildrenCount: dc.firstChildrenSequence.length
+          }))
+        });
         
-        if (!threadData?.rootPost) {
-          console.log('No root post');
-          throw new Error('Thread not found');
+        if (!presentation) {
+          setState(prev => ({ ...prev, error: 'Thread not found', loading: false }));
+          return;
         }
-        setThread(threadData);
+        
+        setState({ presentation, loading: false, error: null });
       } catch (error) {
         console.error('Error loading thread:', error);
-        setError(
-          error instanceof ThreadLoadError
-            ? error.message
-            : 'Unable to load this thread. It may have been deleted or you may not have permission to view it.'
-        );
-      } finally {
-        setLoading(false);
+        setState(prev => ({
+          ...prev,
+          error: error instanceof Error ? error.message : 'An error occurred loading the thread',
+          loading: false
+        }));
       }
     }
 
     fetchThread();
-  }, [threadId, agent, retryCount]);
+  }, [threadId, agent]);
 
-  if (loading) {
+  if (state.loading) {
     console.log('loading');
     return (
       <div className="max-w-2xl mx-auto p-4">
@@ -183,13 +143,13 @@ export function ThreadPage() {
     );
   }
 
-  if (error) {
+  if (state.error) {
     console.log('error');
     return (
       <div className="max-w-2xl mx-auto p-4">
         <BackButton />
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-600 dark:text-red-400 mb-2">{error}</p>
+          <p className="text-red-600 dark:text-red-400 mb-2">{state.error}</p>
           <button
             onClick={handleRetry}
             className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium"
@@ -201,8 +161,8 @@ export function ThreadPage() {
     );
   }
 
-  if (!thread?.rootPost) {
-    console.log('no root post');
+  if (!state.presentation) {
+    console.log('no presentation');
     return (
       <div className="max-w-2xl mx-auto p-4">
         <BackButton />
@@ -214,26 +174,53 @@ export function ThreadPage() {
   }
 
   console.log('rendering thread');
-  const rootPost = thread.rootPost as PostView;
-  const postId = rootPost.uri.split('app.bsky.feed.post/')[1] as string;
-  const replies = thread.replies;
+  const { presentation } = state;
+
+  console.log('Full thread presentation:', {
+    parentPost: {
+      uri: presentation.parentPost.uri,
+      text: (presentation.parentPost.record as any).text,
+      author: {
+        handle: presentation.parentPost.author.handle,
+        displayName: presentation.parentPost.author.displayName
+      }
+    },
+    directChildrenCount: presentation.directChildren.length,
+    directChildren: presentation.directChildren.map(dc => ({
+      uri: dc.post.uri,
+      text: (dc.post.record as any).text,
+      firstChildrenSequence: dc.firstChildrenSequence.map(fc => ({
+        uri: fc.uri,
+        text: (fc.record as any).text
+      }))
+    }))
+  });
 
   return (
     <div className="max-w-2xl mx-auto p-4">
       <BackButton />
-      {rootPost && (
-        <div className="space-y-4">
-          <PostCard post={rootPost} />
-          
-          {replies.length > 0 && (
-            <div className="pl-4 border-l-2 border-border space-y-4">
-              {replies.map((reply) => (
-                <PostCard key={reply.uri} post={reply} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      <div className="space-y-4">
+        {/* Parent Post */}
+        <PostCard post={presentation.parentPost} />
+        
+        {/* Direct Children */}
+        {presentation.directChildren.length > 0 && (
+          <div className="space-y-4">
+            {presentation.directChildren.map((childPresentation) => (
+              <div key={childPresentation.post.uri} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                <PostCard post={childPresentation.post} />
+                
+                {/* First Children Sequence */}
+                {childPresentation.firstChildrenSequence.map((firstChild) => (
+                  <div key={firstChild.uri} className="ml-8 mt-4 border-l-2 border-gray-200 dark:border-gray-700 pl-4">
+                    <PostCard post={firstChild} />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

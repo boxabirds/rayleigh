@@ -58,18 +58,20 @@ export function parseAtUri(uri: string): { did: string; collection: string; rkey
 
 export async function loadThread(agent: BskyAgent, uri: string): Promise<Thread> {
   if (!uri || !agent) {
-    console.error('loadThread missing params:', { uri, hasAgent: !!agent });
     throw new ThreadLoadError('Missing required parameters');
   }
 
   try {
-    console.log('loadThread attempting:', { uri });
+    // Convert did:plc: format to at:// format
+    const atUri = uri.startsWith('did:plc:') ? 
+      `at://${uri}` : 
+      uri;
+
     const threadResponse = await agent.api.app.bsky.feed.getPostThread({
-      uri,
+      uri: atUri,
       depth: 100,
       parentHeight: 0,
     }).catch(error => {
-      console.error('API Error:', { error, uri });
       if (error.status === 404) {
         throw new ThreadLoadError('Thread not found');
       }
@@ -101,7 +103,6 @@ export async function loadThread(agent: BskyAgent, uri: string): Promise<Thread>
     if (error instanceof ThreadLoadError) {
       throw error;
     }
-    console.error('Thread loading error:', error);
     throw new ThreadLoadError(
       error instanceof Error ? error.message : 'Failed to load thread'
     );
