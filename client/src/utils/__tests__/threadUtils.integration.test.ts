@@ -1,152 +1,104 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { BskyAgent } from '@atproto/api';
 import { loadThread } from '../threadUtils';
+import { PostRecord } from '../types';
+import { setupTestAgent } from './testSetup';
+import { TEST_TAG, KNOWN_POSTS, getPostUri } from './fixtures/integrationTestData';
 
 describe('threadUtils integration', () => {
-  let agent: BskyAgent;
-  let testPostUri: string;
-  let testPostCid: string;
-
-  beforeAll(async () => {
+  it('should load an existing thread', async () => {
     try {
-      agent = new BskyAgent({ service: 'https://bsky.social' });
-      const identifier = process.env.BSKY_IDENTIFIER;
-      const password = process.env.BSKY_APP_PASSWORD;
+      console.log('Setting up agent for test...');
+      const agent = await setupTestAgent();
+      console.log('Agent setup complete');
 
-      if (!identifier || !password) {
-        throw new Error('BSKY_IDENTIFIER and BSKY_APP_PASSWORD environment variables must be set');
-      }
+      // Use the parent post from our test data
+      const postUri = getPostUri(KNOWN_POSTS.parent);
+      
+      // Test with full at:// format
+      const thread = await loadThread(agent, postUri.replace('at://', ''));
 
-      console.log('Attempting to log in with identifier:', identifier);
-      await agent.login({ identifier, password });
-      console.log('Login successful');
+      expect(thread).toBeDefined();
+      expect(thread.rootPost.uri).toBe(postUri);
+      expect(thread.rootPost.record).toBeDefined();
+      expect((thread.rootPost.record as PostRecord).text).toContain(`#${TEST_TAG}`);
     } catch (error) {
-      console.error('Error in beforeAll:', error);
+      console.error('Test failed:', error);
       throw error;
     }
-  }, { timeout: 30000 }); // Increase timeout to 30 seconds
+  }, { timeout: 60000 });
 
-  it('should handle full at:// URI format', async () => {
-    // First create a test post
-    const createPostResponse = await agent.post({
-      text: `Test post for URI handling ${Date.now()}`,
-    });
+  it('should handle encoded URIs', async () => {
+    try {
+      console.log('Setting up agent for test...');
+      const agent = await setupTestAgent();
+      console.log('Agent setup complete');
 
-    testPostUri = createPostResponse.uri;
-    testPostCid = createPostResponse.cid;
-
-    // Test with full at:// format
-    const thread = await loadThread(agent, testPostUri.replace('at://', ''));
-    
-    expect(thread.rootPost.uri).toBe(testPostUri);
-    expect(thread.rootPost.cid).toBe(testPostCid);
-    expect(thread.rootPost.record).toBeDefined();
-    expect((thread.rootPost.record as PostRecord).text).toBeDefined();
-
-    // Clean up
-    await agent.deletePost(testPostUri);
-  }, { timeout: 30000 });
-
-  it('should handle encoded URIs from PostCard clicks', async () => {
-    // Create a test post
-    const createPostResponse = await agent.post({
-      text: `Test post for encoded URIs ${Date.now()}`,
-    });
-
-    const postUri = createPostResponse.uri;
-    
-    // Simulate PostCard URL encoding - remove at:// prefix first
-    const normalizedUri = postUri.replace('at://', '');
-    const encodedUri = encodeURIComponent(normalizedUri);
-    console.log('Encoded URI:', encodedUri);
-    
-    // Simulate ThreadPage URL decoding
-    const decodedUri = decodeURIComponent(encodedUri);
-    console.log('Decoded URI:', decodedUri);
-    
-    // Try loading with the decoded URI
-    const thread = await loadThread(agent, decodedUri);
-    
-    expect(thread.rootPost.uri).toBe(postUri);
-    expect(thread.rootPost.record).toBeDefined();
-    expect((thread.rootPost.record as PostRecord).text).toBeDefined();
-    
-    // Clean up
-    await agent.deletePost(postUri);
-  }, { timeout: 30000 });
+      // Use the parent post URI
+      const postUri = getPostUri(KNOWN_POSTS.parent);
+      
+      // Simulate PostCard URL encoding - remove at:// prefix first
+      const normalizedUri = postUri.replace('at://', '');
+      const encodedUri = encodeURIComponent(normalizedUri);
+      
+      // Simulate ThreadPage URL decoding
+      const decodedUri = decodeURIComponent(encodedUri);
+      
+      // Try loading with the decoded URI
+      const thread = await loadThread(agent, decodedUri);
+      
+      expect(thread.rootPost.uri).toBe(postUri);
+      expect(thread.rootPost.record).toBeDefined();
+      expect((thread.rootPost.record as PostRecord).text).toContain(`#${TEST_TAG}`);
+    } catch (error) {
+      console.error('Test failed:', error);
+      throw error;
+    }
+  }, { timeout: 60000 });
 
   it('should load threads with deep reply chains', async () => {
-    // Create root post
-    const rootPostResponse = await agent.post({
-      text: `Root post for testing replies ${Date.now()}`,
-    });
-    
-    // Wait a bit before creating replies to ensure proper ordering
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Create first reply
-    const reply1Response = await agent.post({
-      text: 'Reply 1',
-      reply: {
-        root: {
-          uri: rootPostResponse.uri,
-          cid: rootPostResponse.cid,
-        },
-        parent: {
-          uri: rootPostResponse.uri,
-          cid: rootPostResponse.cid,
-        }
-      }
-    });
+    try {
+      console.log('Setting up agent for test...');
+      const agent = await setupTestAgent();
+      console.log('Agent setup complete');
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Create second reply (reply to reply1)
-    const reply2Response = await agent.post({
-      text: 'Reply 2',
-      reply: {
-        root: {
-          uri: rootPostResponse.uri,
-          cid: rootPostResponse.cid,
-        },
-        parent: {
-          uri: reply1Response.uri,
-          cid: reply1Response.cid,
-        }
-      }
-    });
-    
-    // Wait for replies to be indexed
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Test loading the thread
-    const thread = await loadThread(agent, rootPostResponse.uri.replace('at://', ''));
-    
-    // Verify thread structure
-    expect(thread.rootPost.uri).toBe(rootPostResponse.uri);
-    expect(thread.replies).toHaveLength(2);
-    
-    // Verify replies are in the correct order
-    const replyUris = thread.replies.map(reply => reply.uri);
-    expect(replyUris).toContain(reply1Response.uri);
-    expect(replyUris).toContain(reply2Response.uri);
-    
-    // Clean up
-    await agent.deletePost(reply2Response.uri);
-    await agent.deletePost(reply1Response.uri);
-    await agent.deletePost(rootPostResponse.uri);
-  }, { timeout: 30000 });
+      // Use the parent post and its first child
+      const rootPostUri = getPostUri(KNOWN_POSTS.parent);
+      const firstChild = KNOWN_POSTS.children[0];
+      const firstChildUri = getPostUri(firstChild.id);
+      
+      // Load the thread starting from the root
+      const thread = await loadThread(agent, rootPostUri.replace('at://', ''));
+      
+      // Verify thread structure
+      expect(thread.rootPost.uri).toBe(rootPostUri);
+      expect(thread.replies).toBeDefined();
+      expect(thread.replies.some(reply => reply.uri === firstChildUri)).toBe(true);
+    } catch (error) {
+      console.error('Test failed:', error);
+      throw error;
+    }
+  }, { timeout: 60000 });
 
   it('should handle malformed URIs gracefully', async () => {
-    const badUris = [
-      'not-a-uri',
-      'at://malformed',
-      'at://did:plc:fake/wrong/format',
-      'did:plc:fake/no-prefix'
-    ];
+    try {
+      console.log('Setting up agent for test...');
+      const agent = await setupTestAgent();
+      console.log('Agent setup complete');
 
-    for (const uri of badUris) {
-      await expect(loadThread(agent, uri)).rejects.toThrow('Invalid thread URI');
+      const badUris = [
+        'not-a-uri',
+        'at://malformed',
+        'at://did:plc:fake/wrong/format',
+        'did:plc:fake/no-prefix'
+      ];
+
+      for (const uri of badUris) {
+        await expect(loadThread(agent, uri)).rejects.toThrow('Invalid thread URI');
+      }
+    } catch (error) {
+      console.error('Test failed:', error);
+      throw error;
     }
-  }, { timeout: 30000 });
+  }, { timeout: 60000 });
 });

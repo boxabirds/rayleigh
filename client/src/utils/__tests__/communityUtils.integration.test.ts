@@ -1,66 +1,20 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { BskyAgent } from '@atproto/api';
 import { getParentPosts } from '../communityUtils';
-
-// Test data: Known post hierarchy for #rayleighintegrationtest1
-const TEST_TAG = 'rayleighintegrationtest1';
-const KNOWN_POSTS = {
-  parent: '3lcvgo7r7w22p',
-  children: [
-    {
-      id: '3lcvgow535c2p',
-      children: [
-        {
-          id: '3lcvgpofbz22p',
-          children: [{ id: '3lcvgpy5zt22p', children: [] }]
-        },
-        { id: '3lcvgsyosnc2w', children: [] }
-      ]
-    },
-    {
-      id: '3lcvgpa2cj22p',
-      children: [{ id: '3lcvgqb72ts2p', children: [] }]
-    },
-    { id: '3lcvgqitl2s2p', children: [] }
-  ]
-};
-
-// Flatten the hierarchy to get all post IDs for validation
-function getAllPostIds(node: { id: string, children: any[] }): string[] {
-  const ids = [node.id];
-  for (const child of node.children) {
-    ids.push(...getAllPostIds(child));
-  }
-  return ids;
-}
+import { setupTestAgent } from './testSetup';
+import { TEST_TAG, KNOWN_POSTS, getAllPostIds } from './fixtures/integrationTestData';
 
 describe('communityUtils integration', () => {
   let agent: BskyAgent;
 
   beforeAll(async () => {
-    agent = new BskyAgent({ service: 'https://bsky.social' });
-    const identifier = process.env.BSKY_IDENTIFIER;
-    const password = process.env.BSKY_APP_PASSWORD;
-
-    if (!identifier || !password) {
-      throw new Error('BSKY_IDENTIFIER and BSKY_APP_PASSWORD environment variables must be set');
-    }
-
-    await agent.login({ identifier, password });
-
-    // Verify that the parent post exists
-    try {
-      const parentUri = `at://did:plc:lasy2wsk6shhobbfm5ujhisn/app.bsky.feed.post/${KNOWN_POSTS.parent}`;
-      const parentPost = await agent.getPostThread({ uri: parentUri });
-      if (!parentPost.data.thread.post.record.text.includes(`#${TEST_TAG}`)) {
-        throw new Error('Parent post does not contain the expected tag');
-      }
-    } catch (error) {
-      throw new Error(`Required test data not found: Parent post ${KNOWN_POSTS.parent} must exist with tag #${TEST_TAG}`);
-    }
+    console.log('communityUtils.integration.test.ts - beforeAll start:', new Date().toISOString());
+    agent = await setupTestAgent();
+    console.log('communityUtils.integration.test.ts - beforeAll end:', new Date().toISOString());
   });
 
   it('should return single parent from special production tag', async () => {
+    console.log('communityUtils.integration.test.ts - test start:', new Date().toISOString());
     // 1. Search for #rayleighintegrationtest1
     const searchResponse = await agent.api.app.bsky.feed.searchPosts({
       q: `#${TEST_TAG}`,
