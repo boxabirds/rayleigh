@@ -203,16 +203,25 @@ export function ThreadPage() {
         {/* Parent Post */}
         <PostCard post={presentation.parentPost} />
         
-        {/* Direct Children */}
+        {/* Direct Children and their sequences */}
         {presentation.directChildren.length > 0 && (
           <div className="space-y-4">
             {presentation.directChildren.map((childPresentation) => (
-              <div key={childPresentation.post.uri} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-                <PostCard post={childPresentation.post} />
+              <div key={childPresentation.post.uri} className="relative">
+                {/* Vertical line for the entire child sequence */}
+                <div 
+                  className="absolute left-6 top-0 bottom-0 bg-gray-300 dark:bg-gray-600"
+                  style={{ marginLeft: '-1px', width: '2px' }}
+                />
+                
+                {/* Direct child post */}
+                <div className="relative">
+                  <PostCard post={childPresentation.post} />
+                </div>
                 
                 {/* First Children Sequence */}
                 {childPresentation.firstChildrenSequence.map((firstChild) => (
-                  <div key={firstChild.uri} className="ml-8 mt-4 border-l-2 border-gray-200 dark:border-gray-700 pl-4">
+                  <div key={firstChild.uri} className="relative">
                     <PostCard post={firstChild} />
                   </div>
                 ))}
