@@ -276,6 +276,7 @@ export default function AuthPage() {
                       <FormControl>
                         <Input
                           {...field}
+                          autoFocus
                           placeholder="XXXXX-XXXXX"
                           className="bg-[#F1F3F5] border-[#D4DBE2] focus:border-[#1083FE] focus:ring-[#1083FE]"
                           disabled={isLoading}
