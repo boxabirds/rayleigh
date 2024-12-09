@@ -1,4 +1,4 @@
-import { PostView, ThreadViewPost } from '@atproto/api/dist/client/types/app/bsky/feed/defs';
+import { PostView, ThreadViewPost, NotFoundPost, BlockedPost } from '@atproto/api/dist/client/types/app/bsky/feed/defs';
 import { BskyAgent } from '@atproto/api';
 import { AppBskyFeedPost } from '@atproto/api';
 
@@ -16,6 +16,8 @@ interface ThreadPresentation {
   parentPost: PostView;
   directChildren: DirectChildPresentation[];
 }
+
+type ReplyPost = ThreadViewPost | NotFoundPost | BlockedPost | { [k: string]: unknown; $type: string; };
 
 function findFirstChildPath(reply: ThreadReply): PostView[] {
   if (!reply || !reply.replies) {
@@ -55,12 +57,15 @@ async function getFirstChildSequence(agent: BskyAgent, post: ThreadViewPost): Pr
   // Skip the root post since we want to start with its first child
   if (current.replies && current.replies.length > 0) {
     // Get all replies and sort them by creation time
-    const sortedReplies = [...current.replies].sort((a, b) => {
-      const timeA = new Date((a.post.record as AppBskyFeedPost.Record).createdAt).getTime();
-      const timeB = new Date((b.post.record as AppBskyFeedPost.Record).createdAt).getTime();
-      return timeA - timeB;
-    });
-    current = sortedReplies[0] as ThreadViewPost;
+    const sortedReplies = [...current.replies]
+      .filter((reply): reply is ThreadViewPost => 'post' in reply)
+      .sort((a, b) => {
+        const timeA = new Date((a.post.record as AppBskyFeedPost.Record).createdAt).getTime();
+        const timeB = new Date((b.post.record as AppBskyFeedPost.Record).createdAt).getTime();
+        return timeA - timeB;
+      });
+    
+    current = sortedReplies[0] || null;
   } else {
     try {
       const response = await agent.getPostThread({ 
@@ -79,12 +84,15 @@ async function getFirstChildSequence(agent: BskyAgent, post: ThreadViewPost): Pr
       }
 
       // Get all replies and sort them by creation time
-      const sortedReplies = [...thread.replies].sort((a, b) => {
-        const timeA = new Date((a.post.record as AppBskyFeedPost.Record).createdAt).getTime();
-        const timeB = new Date((b.post.record as AppBskyFeedPost.Record).createdAt).getTime();
-        return timeA - timeB;
-      });
-      current = sortedReplies[0] as ThreadViewPost;
+      const sortedReplies = [...thread.replies]
+        .filter((reply): reply is ThreadViewPost => 'post' in reply)
+        .sort((a, b) => {
+          const timeA = new Date((a.post.record as AppBskyFeedPost.Record).createdAt).getTime();
+          const timeB = new Date((b.post.record as AppBskyFeedPost.Record).createdAt).getTime();
+          return timeA - timeB;
+        });
+      
+      current = sortedReplies[0] || null;
     } catch (error) {
       return sequence;
     }
@@ -97,12 +105,15 @@ async function getFirstChildSequence(agent: BskyAgent, post: ThreadViewPost): Pr
     // Try to get the first child from immediate replies
     if (current.replies && current.replies.length > 0) {
       // Get all replies and sort them by creation time
-      const sortedReplies = [...current.replies].sort((a, b) => {
-        const timeA = new Date((a.post.record as AppBskyFeedPost.Record).createdAt).getTime();
-        const timeB = new Date((b.post.record as AppBskyFeedPost.Record).createdAt).getTime();
-        return timeA - timeB;
-      });
-      current = sortedReplies[0] as ThreadViewPost;
+      const sortedReplies = [...current.replies]
+        .filter((reply): reply is ThreadViewPost => 'post' in reply)
+        .sort((a, b) => {
+          const timeA = new Date((a.post.record as AppBskyFeedPost.Record).createdAt).getTime();
+          const timeB = new Date((b.post.record as AppBskyFeedPost.Record).createdAt).getTime();
+          return timeA - timeB;
+        });
+      
+      current = sortedReplies[0] || null;
       continue;
     }
 
@@ -124,12 +135,15 @@ async function getFirstChildSequence(agent: BskyAgent, post: ThreadViewPost): Pr
       }
 
       // Get all replies and sort them by creation time
-      const sortedReplies = [...thread.replies].sort((a, b) => {
-        const timeA = new Date((a.post.record as AppBskyFeedPost.Record).createdAt).getTime();
-        const timeB = new Date((b.post.record as AppBskyFeedPost.Record).createdAt).getTime();
-        return timeA - timeB;
-      });
-      current = sortedReplies[0] as ThreadViewPost;
+      const sortedReplies = [...thread.replies]
+        .filter((reply): reply is ThreadViewPost => 'post' in reply)
+        .sort((a, b) => {
+          const timeA = new Date((a.post.record as AppBskyFeedPost.Record).createdAt).getTime();
+          const timeB = new Date((b.post.record as AppBskyFeedPost.Record).createdAt).getTime();
+          return timeA - timeB;
+        });
+      
+      current = sortedReplies[0] || null;
     } catch (error) {
       break;
     }
@@ -181,7 +195,7 @@ async function loadThread(agent: BskyAgent, uri: string): Promise<ThreadPresenta
       );
 
       // Sort by creation time
-      childrenWithSequences.sort((a, b) => {
+      childrenWithSequences.sort((a: DirectChildPresentation, b: DirectChildPresentation) => {
         const timeA = new Date((a.post.record as AppBskyFeedPost.Record).createdAt).getTime();
         const timeB = new Date((b.post.record as AppBskyFeedPost.Record).createdAt).getTime();
         return timeA - timeB;
@@ -219,7 +233,7 @@ function buildThreadPresentation(thread: ThreadViewPost): ThreadPresentation {
   });
 
   // Sort by creation time
-  directChildrenWithPaths.sort((a, b) => {
+  directChildrenWithPaths.sort((a: DirectChildPresentation, b: DirectChildPresentation) => {
     const timeA = new Date((a.post.record as AppBskyFeedPost.Record).createdAt).getTime();
     const timeB = new Date((b.post.record as AppBskyFeedPost.Record).createdAt).getTime();
     return timeA - timeB;
