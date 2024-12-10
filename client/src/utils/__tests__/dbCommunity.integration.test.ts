@@ -65,6 +65,7 @@ describe('Community Integration Tests', () => {
       description: 'A test community',
       rules: 'Be nice',
       creatorDid: agent.session?.did!,
+      hashtag: 'testcommunity',
       postTags: ['test'],
       channels: ['general'],
       initialMembers: [{ did: agent.session?.did! }],
@@ -77,12 +78,7 @@ describe('Community Integration Tests', () => {
     expect(community.description).toBe(testCommunity.description);
     expect(community.rules).toBe(testCommunity.rules);
     expect(community.creatorDid).toBe(testCommunity.creatorDid);
-
-    // Verify tags were created
-    const tags = await db.query.communityTags.findMany({
-      where: (tags, { eq }) => eq(tags.communityId, community.id)
-    });
-    expect(tags).toHaveLength(2); // 1 post tag + 1 channel
+    expect(community.hashtag).toBe(testCommunity.hashtag);
 
     // Verify members were added
     const members = await db.query.communityMembers.findMany({

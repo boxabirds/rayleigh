@@ -1,22 +1,39 @@
-import React, { useCallback, useState, useRef } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { PostCard } from '../components/PostCard';
 import { ThemeToggle } from '../components/theme-toggle';
 import { getParentPosts, CommunityPost } from '../utils/communityUtils';
+import { useAgent } from "@/contexts/agent";
+import { useToast } from "@/hooks/use-toast";
 
 interface CommunityPageProps {
   tag?: string;
 }
 
 export default function CommunityPage({ tag }: CommunityPageProps) {
-  const agent = useRequireAuth();
-  const [, navigate] = useLocation();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const agent = useAgent();
+  const { toast } = useToast();
+  const [location, navigate] = useLocation();
+
+  useEffect(() => {
+    // Check URL parameters for newCommunity flag
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('newCommunity') === 'true') {
+      const communityName = params.get('communityName');
+      if (communityName) {
+        toast({
+          title: "Success!",
+          description: `You have successfully created the '${communityName}' community!`,
+        });
+      }
+    }
+  }, [toast]);
 
   const fetchPosts = useCallback(async () => {
     if (!agent || isLoading || !hasMore || !tag) return;
