@@ -13,7 +13,7 @@ describe('communityUtils integration', () => {
     console.log('communityUtils.integration.test.ts - beforeAll end:', new Date().toISOString());
   });
 
-  it('should return single parent from special production tag', async () => {
+  it('should return all parent posts from special production tag', async () => {
     console.log('communityUtils.integration.test.ts - test start:', new Date().toISOString());
     // 1. Search for #rayleighintegrationtest1
     const searchResponse = await agent.api.app.bsky.feed.searchPosts({
@@ -29,7 +29,7 @@ describe('communityUtils integration', () => {
 
     // 2. Compare search results against known post IDs
     const expectedPostIds = new Set([
-      KNOWN_POSTS.parent,
+      ...KNOWN_POSTS.parents,
       ...KNOWN_POSTS.children.flatMap(child => getAllPostIds(child))
     ]);
 
@@ -58,11 +58,16 @@ describe('communityUtils integration', () => {
       isReply: !!p.post.reply
     })));
 
-    // 5. Confirm single parent post
-    expect(result.posts.length).toBe(1);
-    expect(result.posts[0].post.uri).toBe(
-      `at://did:plc:lasy2wsk6shhobbfm5ujhisn/app.bsky.feed.post/${KNOWN_POSTS.parent}`
-    );
+    // 5. Confirm we got all 4 parent posts
+    expect(result.posts.length).toBe(4);
+    
+    // Verify each parent post URI
+    const foundParentIds = result.posts.map(p => p.post.uri.split('/').pop());
+    expect(new Set(foundParentIds)).toEqual(new Set(KNOWN_POSTS.parents));
+
+    // Verify posts are ordered by timestamp (most recent first)
+    const timestamps = result.posts.map(p => p.post.indexedAt);
+    expect([...timestamps].sort().reverse()).toEqual(timestamps);
   });
 
   it('should sort posts by like count when using top sort order', async () => {
@@ -74,21 +79,20 @@ describe('communityUtils integration', () => {
 
     // Get parent post and verify it exists
     const parentPost = searchResponse.data.posts.find(post => 
-      post.uri === `${BASE_URI}/${KNOWN_POSTS.parent}`
+      post.uri === `${BASE_URI}/${KNOWN_POSTS.parents[0]}`
     );
     expect(parentPost).toBeDefined();
 
     // Get posts sorted by likes
     const topResult = await getParentPosts(agent, TEST_TAG, undefined, 10, 'top');
-    expect(topResult.posts.length).toBe(1); // Should still only find one parent post
+    expect(topResult.posts.length).toBe(4); // Should still only find all parent posts
 
     // Get posts sorted by recent (default)
     const recentResult = await getParentPosts(agent, TEST_TAG);
-    expect(recentResult.posts.length).toBe(1);
+    expect(recentResult.posts.length).toBe(4);
 
-    // Both sorts should return the same post since there's only one parent
-    expect(topResult.posts[0].post.uri).toBe(recentResult.posts[0].post.uri);
-    expect(topResult.posts[0].post.uri).toBe(`${BASE_URI}/${KNOWN_POSTS.parent}`);
+    // Both sorts should return the same posts since there are multiple parent posts
+    expect(topResult.posts.map(p => p.post.uri)).toEqual(recentResult.posts.map(p => p.post.uri));
 
     // Verify post has expected properties
     const topPost = topResult.posts[0].post;
@@ -109,10 +113,10 @@ describe('communityUtils integration', () => {
     expect(results[0].posts.length).toBe(results[1].posts.length);
     expect(results[1].posts.length).toBe(results[2].posts.length);
 
-    // All calls should return the same parent post
-    const uris = results.map(r => r.posts[0].post.uri);
-    expect(uris[0]).toBe(uris[1]);
-    expect(uris[1]).toBe(uris[2]);
-    expect(uris[0]).toBe(`${BASE_URI}/${KNOWN_POSTS.parent}`);
+    // All calls should return the same parent posts
+    const uris = results.map(r => r.posts.map(p => p.post.uri));
+    expect(uris[0]).toEqual(uris[1]);
+    expect(uris[1]).toEqual(uris[2]);
+    expect(uris[0]).toEqual(KNOWN_POSTS.parents.map(id => `${BASE_URI}/${id}`));
   });
 });

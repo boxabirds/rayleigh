@@ -2,7 +2,14 @@
 export const TEST_TAG = 'rayleighintegrationtest1';
 
 export const KNOWN_POSTS = {
-  parent: '3lcvgo7r7w22p',
+  // Parent posts
+  parents: [
+    '3lcvgo7r7w22p',  // Parent 1 (original)
+    '3lcyctkrfi22u',  // Parent 2
+    '3lcycts5yrc2u',  // Parent 3
+    '3lcycuehwrc2u',  // Parent 4
+  ],
+  // Child posts under Parent 1
   children: [
     {
       id: '3lcvgow535c2p',
