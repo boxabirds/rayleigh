@@ -144,6 +144,7 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
               <button
                 onClick={() => fetchPosts()}
                 className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                aria-label="Load more posts"
               >
                 More
               </button>
