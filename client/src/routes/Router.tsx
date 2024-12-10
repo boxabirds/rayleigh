@@ -32,7 +32,7 @@ export default function Router() {
       <Route path={routes.community.path}>
         {(params: { tag?: string }) => (
           <ProtectedRoute path={routes.community.path}>
-            <CommunityPage tag={params.tag?.startsWith('#') ? params.tag.slice(1) : params.tag} />
+            <CommunityPage tag={params.tag} />
           </ProtectedRoute>
         )}
       </Route>

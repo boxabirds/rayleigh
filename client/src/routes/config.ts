@@ -17,7 +17,7 @@ const routes: Record<string, RouteConfig> = {
     requiresAuth: true,
   },
   community: {
-    path: '/community/:tag*',  // This will match /community/#tag
+    path: '/community/tags/:tag',  // Will match /community/tags/something
     requiresAuth: true,
   },
   search: {
