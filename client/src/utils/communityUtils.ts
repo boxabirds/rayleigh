@@ -1,5 +1,6 @@
 import { BskyAgent } from '@atproto/api';
 import { PostView, ReplyRef } from '@atproto/api/dist/client/types/app/bsky/feed/defs';
+import { ComAtprotoRepoCreateRecord } from '@atproto/api';
 
 export interface CommunityPost {
   post: PostView;
@@ -55,8 +56,8 @@ export async function createCommunity(
   });
 
   return {
-    uri: response.uri,
-    cid: response.cid,
+    uri: response.data.uri,
+    cid: response.data.cid,
     ...record
   } as Community;
 }

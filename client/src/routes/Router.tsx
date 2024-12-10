@@ -5,6 +5,7 @@ import { ProtectedRoute } from '../components/ProtectedRoute';
 import AuthPage from '../pages/AuthPage';
 import HomePage from '../pages/HomePage';
 import CommunityPage from '../pages/CommunityPage';
+import CreateCommunityPage from '../pages/CreateCommunityPage';
 import SearchPage from '../pages/SearchPage';
 import { ThreadPage } from '../pages/ThreadPage';
 
@@ -24,9 +25,17 @@ export default function Router() {
         <HomePage />
       </ProtectedRoute>
 
-      <ProtectedRoute path={routes.community.path}>
-        <CommunityPage />
+      <ProtectedRoute path={routes.communityNew.path}>
+        <CreateCommunityPage />
       </ProtectedRoute>
+
+      <Route path={routes.community.path}>
+        {(params: { tag?: string }) => (
+          <ProtectedRoute path={routes.community.path}>
+            <CommunityPage tag={params.tag?.startsWith('#') ? params.tag.slice(1) : params.tag} />
+          </ProtectedRoute>
+        )}
+      </Route>
 
       <ProtectedRoute path={routes.search.path}>
         <SearchPage />

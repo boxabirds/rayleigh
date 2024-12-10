@@ -1,13 +1,16 @@
 import React, { useCallback, useState, useRef } from 'react';
-import { useParams, useLocation } from 'wouter';
+import { useLocation } from 'wouter';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { PostCard } from '../components/PostCard';
 import { ThemeToggle } from '../components/theme-toggle';
 import { getParentPosts, CommunityPost } from '../utils/communityUtils';
 
-export default function CommunityPage() {
+interface CommunityPageProps {
+  tag?: string;
+}
+
+export default function CommunityPage({ tag }: CommunityPageProps) {
   const agent = useRequireAuth();
-  const { tag } = useParams<{ tag: string }>();
   const [, navigate] = useLocation();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,21 +22,19 @@ export default function CommunityPage() {
     if (!agent || isLoading || !hasMore || !tag) return;
     
     setIsLoading(true);
-    setError(null);
     try {
       const result = await getParentPosts(agent, tag, cursor);
-      
-      setPosts(prevPosts => [...prevPosts, ...result.posts]);
+      setPosts(prev => [...prev, ...result.posts]);
       setCursor(result.cursor);
       setHasMore(!!result.cursor);
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      setError('Failed to load posts. Please try again.');
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch posts');
       setHasMore(false);
     } finally {
       setIsLoading(false);
     }
-  }, [agent, isLoading, hasMore, cursor, tag]);
+  }, [agent, tag, cursor, isLoading, hasMore]);
 
   const handlePostClick = useCallback((post: CommunityPost) => {
     const postId = post.post.uri.split('/').pop() || '';

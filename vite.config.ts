@@ -32,6 +32,12 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
     hmr: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
