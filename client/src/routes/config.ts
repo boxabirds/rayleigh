@@ -12,8 +12,12 @@ const routes: Record<string, RouteConfig> = {
     path: '/auth',
     requiresAuth: false,
   },
+  communityNew: {
+    path: '/community/new',
+    requiresAuth: true,
+  },
   community: {
-    path: '/community/:tag',
+    path: '/community/:tag*',  // This will match /community/#tag
     requiresAuth: true,
   },
   search: {
