@@ -1,41 +1,30 @@
 import React from 'react';
 import { useLocation } from 'wouter';
 import { useAgent } from '../contexts/agent';
-import { CreateCommunity } from '@/components/CreateCommunity';
-import type { UserProfile } from '@/components/UserSearch';
+import { CreateCommunity } from '../components/CreateCommunity';
+
+interface CommunityData {
+  name: string;
+  hashtag: string;
+  description: string;
+  rules: string;
+  initialMembers: Array<{ did: string }>;
+}
 
 export default function CreateCommunityPage() {
   const [, setLocation] = useLocation();
   const agent = useAgent();
 
-  const handleSubmit = async (data: {
-    name: string;
-    postTags: string[];
-    description: string;
-    rules: string;
-    channels: string[];
-    initialMembers: UserProfile[];
-  }) => {
+  const handleSubmit = async (community: CommunityData) => {
     try {
-      const response = await fetch('/api/communities', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...data,
-          creatorDid: agent?.session?.did,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create community');
+      if (community.hashtag) {
+        setLocation(`/community/tags/${community.hashtag}`);
+      } else {
+        console.error('No hashtag provided for community');
+        // TODO: Add error toast
       }
-
-      const community = await response.json();
-      setLocation(`/community/#${community.tag}`);
     } catch (error) {
-      console.error('Error creating community:', error);
+      console.error('Error navigating to community:', error);
       // TODO: Add error toast
     }
   };

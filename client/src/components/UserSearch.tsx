@@ -60,8 +60,8 @@ export const UserSearch: React.FC<UserSearchProps> = ({
   }, [query, agent]);
 
   useEffect(() => {
-    // Reset selected index when results change
-    setSelectedIndex(-1);
+    // Set selected index to 0 (first item) when results are available
+    setSelectedIndex(results.length > 0 ? 0 : -1);
   }, [results]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -76,7 +76,7 @@ export const UserSearch: React.FC<UserSearchProps> = ({
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex(prev => prev > 0 ? prev - 1 : prev);
+        setSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
         break;
       case 'Enter':
         e.preventDefault();

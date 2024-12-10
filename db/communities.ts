@@ -1,116 +1,90 @@
-import { db, communities, communityTags, communityMembers } from './';
+import { db as defaultDb, communities, communityMembers } from './';
 import { and, eq } from 'drizzle-orm';
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import type * as schema from './schema';
 
 export interface CreateCommunityInput {
   name: string;
   description: string;
   rules: string;
   creatorDid: string;
-  postTags: string[];
-  channels: string[];
+  hashtag: string;
   initialMembers: Array<{ did: string }>;
 }
 
-export async function createCommunity(input: CreateCommunityInput) {
-  return await db.transaction(async (tx) => {
-    // Create the community
-    const [community] = await tx
-      .insert(communities)
-      .values({
-        name: input.name,
-        description: input.description,
-        rules: input.rules,
-        creator_did: input.creatorDid,
-      })
-      .returning();
+export async function createCommunity(input: CreateCommunityInput, testDb?: NodePgDatabase<typeof schema>) {
+  const db = testDb || defaultDb;
+  try {
+    return await db.transaction(async (tx) => {
+      console.log('Creating community with input:', input);
+      
+      // Create the community
+      const [community] = await tx
+        .insert(communities)
+        .values({
+          name: input.name,
+          description: input.description,
+          rules: input.rules,
+          hashtag: input.hashtag,
+          creatorDid: input.creatorDid,
+        })
+        .returning();
 
-    // Add post tags
-    if (input.postTags.length > 0) {
-      await tx.insert(communityTags).values(
-        input.postTags.map((tag) => ({
-          community_id: community.id,
-          tag,
-          type: 'post',
-        }))
-      );
-    }
+      console.log('Created community:', community);
 
-    // Add channels
-    if (input.channels.length > 0) {
-      await tx.insert(communityTags).values(
-        input.channels.map((channel) => ({
-          community_id: community.id,
-          tag: channel,
-          type: 'channel',
-        }))
-      );
-    }
+      // Add initial members
+      if (input.initialMembers.length > 0) {
+        console.log('Adding initial members:', input.initialMembers);
+        await tx.insert(communityMembers).values(
+          input.initialMembers.map((member) => ({
+            communityId: community.id,
+            memberDid: member.did,
+            role: member.did === input.creatorDid ? 'owner' : 'member',
+          }))
+        );
+      }
 
-    // Add creator and initial members
-    const memberInserts = [
-      {
-        community_id: community.id,
-        member_did: input.creatorDid,
-        role: 'owner',
-      },
-      ...input.initialMembers.map((member) => ({
-        community_id: community.id,
-        member_did: member.did,
-        role: 'member',
-      })),
-    ];
+      // Always add creator as owner if not in initial members
+      if (!input.initialMembers.some(m => m.did === input.creatorDid)) {
+        console.log('Adding creator as owner');
+        await tx.insert(communityMembers).values({
+          communityId: community.id,
+          memberDid: input.creatorDid,
+          role: 'owner',
+        });
+      }
 
-    await tx.insert(communityMembers).values(memberInserts);
+      return community;
+    });
+  } catch (error) {
+    console.error('Error in createCommunity:', error);
+    throw error;
+  }
+}
 
-    // Return the created community with its tags and members
-    const tags = await tx
+export async function getCommunity(hashtag: string) {
+  try {
+    const [community] = await defaultDb
       .select()
-      .from(communityTags)
-      .where(eq(communityTags.community_id, community.id));
+      .from(communities)
+      .where(eq(communities.hashtag, hashtag))
+      .limit(1);
 
-    const members = await tx
+    if (!community) {
+      return null;
+    }
+
+    const members = await defaultDb
       .select()
       .from(communityMembers)
-      .where(eq(communityMembers.community_id, community.id));
+      .where(eq(communityMembers.communityId, community.id));
 
     return {
       ...community,
-      postTags: tags.filter((t) => t.type === 'post').map((t) => t.tag),
-      channels: tags.filter((t) => t.type === 'channel').map((t) => t.tag),
-      members: members.map((m) => ({
-        did: m.member_did,
-        role: m.role,
-      })),
-      tag: community.name.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+      members,
     };
-  });
-}
-
-export async function getCommunity(id: string) {
-  const community = await db.query.communities.findFirst({
-    where: eq(communities.id, id),
-  });
-
-  if (!community) return null;
-
-  const tags = await db
-    .select()
-    .from(communityTags)
-    .where(eq(communityTags.community_id, community.id));
-
-  const members = await db
-    .select()
-    .from(communityMembers)
-    .where(eq(communityMembers.community_id, community.id));
-
-  return {
-    ...community,
-    postTags: tags.filter((t) => t.type === 'post').map((t) => t.tag),
-    channels: tags.filter((t) => t.type === 'channel').map((t) => t.tag),
-    members: members.map((m) => ({
-      did: m.member_did,
-      role: m.role,
-    })),
-    tag: community.name.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-  };
+  } catch (error) {
+    console.error('Error in getCommunity:', error);
+    throw error;
+  }
 }
