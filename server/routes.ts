@@ -1,7 +1,10 @@
 import type { Express } from "express";
-import { createCommunity, getCommunity } from '../db/communities';
+import { createCommunity, getCommunity, getOwnedCommunities } from '../db/communities';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import * as schema from '../db/schema';
 
-export function registerRoutes(app: Express) {
+export function registerRoutes(app: Express, testDb?: NodePgDatabase<typeof schema>) {
   // Simple health check endpoint
   app.get('/api/health', (req, res) => {
     console.log('Health check requested');
@@ -36,7 +39,7 @@ export function registerRoutes(app: Express) {
         creatorDid,
         hashtag,
         initialMembers: initialMembers || [],
-      });
+      }, testDb);
 
       console.log('Community created:', community);
       res.status(201).json(community);
@@ -54,7 +57,7 @@ export function registerRoutes(app: Express) {
   app.get('/api/communities/:hashtag', async (req, res) => {
     try {
       const { hashtag } = req.params;
-      const community = await getCommunity(hashtag);
+      const community = await getCommunity(hashtag, testDb);
       
       if (!community) {
         return res.status(404).json({ error: 'Community not found' });
@@ -64,6 +67,24 @@ export function registerRoutes(app: Express) {
     } catch (error) {
       console.error('Error getting community:', error);
       res.status(500).json({ error: 'Failed to get community' });
+    }
+  });
+
+  // Get communities owned by a user
+  app.get('/api/community/owner', async (req, res) => {
+    try {
+      const ownerDid = req.query.did as string;
+      if (!ownerDid) {
+        return res.status(400).json({ error: 'Missing required did parameter' });
+      }
+
+      console.log('Getting owned communities for did:', ownerDid);
+      const communities = await getOwnedCommunities(ownerDid, testDb);
+      console.log('Found communities:', communities);
+      res.json(communities);
+    } catch (error) {
+      console.error('Error getting owned communities:', error);
+      res.status(500).json({ error: 'Failed to get owned communities' });
     }
   });
 }
