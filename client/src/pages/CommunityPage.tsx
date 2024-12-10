@@ -20,8 +20,7 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [community, setCommunity] = useState<Community | null>(null);
   const [isCommunityLoading, setIsCommunityLoading] = useState(true);
-  const MAX_POSTS = 50; // Maximum number of posts to load in total
-  const POSTS_PER_PAGE = 10; // Number of posts to load per request
+  const POSTS_PER_PAGE = 10;
   const agent = useAgent();
   const { toast } = useToast();
   const [location, navigate] = useLocation();
@@ -67,36 +66,14 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
   }, [tag]);
 
   const fetchPosts = useCallback(async () => {
-    if (!agent || isLoading || !hasMore || !tag) return;
-    
-    // Don't fetch more if we've hit the maximum
-    if (posts.length >= MAX_POSTS) {
-      setHasMore(false);
-      return;
-    }
+    if (!agent || isLoading || !tag) return;
     
     setIsLoading(true);
     try {
       const result = await getParentPosts(agent, tag, cursor, POSTS_PER_PAGE);
-      setPosts(prev => {
-        // Create a Set of existing URIs for O(1) lookup
-        const existingUris = new Set(prev.map(p => p.post.uri));
-        
-        // Filter out any posts that already exist
-        const newPosts = result.posts.filter(p => !existingUris.has(p.post.uri));
-        
-        const updatedPosts = [...prev, ...newPosts];
-        
-        // If we've hit or exceeded the maximum, set hasMore to false
-        if (updatedPosts.length >= MAX_POSTS) {
-          setHasMore(false);
-          return updatedPosts.slice(0, MAX_POSTS);
-        }
-        
-        return updatedPosts;
-      });
+      setPosts(prev => [...prev, ...result.posts]);
       setCursor(result.cursor);
-      setHasMore(!!result.cursor);
+      setHasMore(result.posts.length === POSTS_PER_PAGE);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch posts');
@@ -104,11 +81,15 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [agent, isLoading, hasMore, tag, cursor, posts.length]);
+  }, [agent, isLoading, tag, cursor]);
 
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    if (!tag || !agent) return;
+    setPosts([]);
+    setCursor(undefined);
+    setHasMore(true);
+    fetchPosts(); // Load initial 10 posts
+  }, [tag, agent]);
 
   const handlePostClick = (post: CommunityPost) => {
     const postId = post.post.uri.split('/').pop();
