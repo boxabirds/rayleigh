@@ -65,6 +65,12 @@ export const UserSearch: React.FC<UserSearchProps> = ({
   }, [results]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    // Always prevent Enter key from bubbling up to form
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     if (results.length === 0) return;
 
     switch (e.key) {
@@ -79,13 +85,14 @@ export const UserSearch: React.FC<UserSearchProps> = ({
         setSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
         break;
       case 'Enter':
-        e.preventDefault();
         if (selectedIndex >= 0 && !selectedUsers.some(u => u.did === results[selectedIndex].did)) {
           onSelect(results[selectedIndex]);
           setQuery('');
           setResults([]);
         }
         break;
+      default:
+        return;
     }
   };
 
@@ -98,13 +105,13 @@ export const UserSearch: React.FC<UserSearchProps> = ({
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Search users..."
-          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
         />
         {isLoading && (
-          <div className="absolute right-3 top-2">Loading...</div>
+          <div className="absolute right-3 top-2 dark:text-gray-300">Loading...</div>
         )}
         {results.length > 0 && (
-          <div className="absolute w-full mt-1 bg-white border rounded-md shadow-lg">
+          <div className="absolute w-full mt-1 bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-md shadow-lg">
             {results.map((user, index) => (
               <button
                 key={user.did}
@@ -113,8 +120,8 @@ export const UserSearch: React.FC<UserSearchProps> = ({
                   setQuery('');
                   setResults([]);
                 }}
-                className={`w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center space-x-2 ${
-                  index === selectedIndex ? 'bg-gray-100' : ''
+                className={`w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 ${
+                  index === selectedIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
                 }`}
                 disabled={selectedUsers.some(u => u.did === user.did)}
               >
@@ -126,8 +133,8 @@ export const UserSearch: React.FC<UserSearchProps> = ({
                   />
                 )}
                 <div>
-                  <div>{user.displayName}</div>
-                  <div className="text-sm text-gray-500">@{user.handle}</div>
+                  <div className="dark:text-gray-100">{user.displayName}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">@{user.handle}</div>
                 </div>
               </button>
             ))}
@@ -154,7 +161,7 @@ export const UserSearch: React.FC<UserSearchProps> = ({
                 e.preventDefault();
                 onRemove(user);
               }}
-              className="text-gray-500 hover:text-red-500"
+              className="text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
               aria-label="Remove user"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">

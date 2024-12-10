@@ -66,7 +66,7 @@ export async function getParentPosts(
   agent: BskyAgent,
   tag: string,
   cursor?: string,
-  maxPosts: number = 25
+  maxPosts: number = 10
 ): Promise<GetParentPostsResult> {
   const response = await agent.api.app.bsky.feed.searchPosts({
     q: `#${tag}`,
