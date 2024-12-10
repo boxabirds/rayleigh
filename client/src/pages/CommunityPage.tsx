@@ -117,21 +117,27 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
         <div className="flex justify-between items-center mb-8">
           <div>
             <div className="flex items-center gap-4 mb-2">
-              <h1 className="text-4xl font-bold">#{tag}</h1>
-              {isCommunityLoading ? (
-                <div className="h-8 w-32 bg-accent animate-pulse rounded"></div>
-              ) : !community ? (
+              {community ? (
+                <>
+                <h1 className="text-4xl font-bold">{community.name}</h1>
+                <h1 className="text-2xl">#{tag}</h1>
+                </>
+              ) : (
+                <>
+                <h1 className="text-4xl font-bold">#{tag}</h1>
                 <Button
                   onClick={() => navigate(`/community/new?tag=${tag.replace(/^#/, '')}`)}
                   variant="outline"
                 >
-                  Claim this community
-                </Button>
-              ) : null}
+                Claim this community
+              </Button>
+              </>
+              )}
+              
+              {isCommunityLoading && (
+                <div className="h-8 w-32 bg-accent animate-pulse rounded"></div>
+              ) }
             </div>
-            {community && (
-              <h2 className="text-2xl text-muted-foreground">{community.name}</h2>
-            )}
           </div>
           <ThemeToggle />
         </div>

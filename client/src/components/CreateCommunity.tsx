@@ -157,20 +157,27 @@ export const CreateCommunity: React.FC<CreateCommunityProps> = ({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
+      e.preventDefault();
+    }
+  };
+
   const isFormValid = name.trim() && hashtag && hashtagValidation.isValid;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Community Name
         </label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          onKeyDown={handleKeyDown}
           required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:text-gray-100 sm:text-sm"
           placeholder="Enter community name..."
           name="name"
           autoFocus
@@ -178,7 +185,7 @@ export const CreateCommunity: React.FC<CreateCommunityProps> = ({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Community Hashtag
         </label>
         <div className="relative">
@@ -201,13 +208,13 @@ export const CreateCommunity: React.FC<CreateCommunityProps> = ({
             </div>
           )}
           {hashtagValidation.error && (
-            <p className="mt-1 text-sm text-red-600">{hashtagValidation.error}</p>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{hashtagValidation.error}</p>
           )}
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Description
         </label>
         <textarea
@@ -215,14 +222,14 @@ export const CreateCommunity: React.FC<CreateCommunityProps> = ({
           onChange={(e) => setDescription(e.target.value)}
           required
           rows={3}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:text-gray-100 sm:text-sm"
           placeholder="Enter community description..."
           name="description"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Rules
         </label>
         <textarea
@@ -230,14 +237,14 @@ export const CreateCommunity: React.FC<CreateCommunityProps> = ({
           onChange={(e) => setRules(e.target.value)}
           required
           rows={6}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"
+          className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:text-gray-100 sm:text-sm font-mono"
           placeholder="Enter community rules (markdown supported)..."
           name="rules"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Initial Members
         </label>
         <UserSearch
@@ -258,7 +265,7 @@ export const CreateCommunity: React.FC<CreateCommunityProps> = ({
         <button
           type="submit"
           disabled={!isFormValid || isSubmitting}
-          className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? 'Creating...' : 'Create Community'}
         </button>

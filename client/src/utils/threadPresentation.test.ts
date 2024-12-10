@@ -26,17 +26,25 @@ describe('threadPresentation', () => {
   });
 
   describe('buildThreadPresentation', () => {
-    it('should correctly structure a thread with no replies', () => {
+    let mockAgent: { getPostThread: ReturnType<typeof vi.fn> };
+
+    beforeEach(() => {
+      mockAgent = {
+        getPostThread: vi.fn(),
+      };
+    });
+
+    it('should correctly structure a thread with no replies', async () => {
       const parentPost = createMockPost('parent', '2024-12-09T10:00:00Z');
       const thread = createMockThread(parentPost);
 
-      const result = buildThreadPresentation(thread);
+      const result = await buildThreadPresentation(mockAgent as unknown as BskyAgent, thread);
 
       expect(result.parentPost).toBe(parentPost);
       expect(result.directChildren).toHaveLength(0);
     });
 
-    it('should correctly structure a thread with direct replies in chronological order', () => {
+    it('should correctly structure a thread with direct replies in chronological order', async () => {
       const parentPost = createMockPost('parent', '2024-12-09T10:00:00Z');
       const reply2 = createMockPost('reply2', '2024-12-09T10:02:00Z');
       const reply1 = createMockPost('reply1', '2024-12-09T10:01:00Z');
@@ -48,7 +56,12 @@ describe('threadPresentation', () => {
         createMockThread(reply3),
       ]);
 
-      const result = buildThreadPresentation(thread);
+      mockAgent.getPostThread.mockImplementation(() => Promise.resolve({
+        success: true,
+        data: { thread: createMockThread(reply1) }
+      }));
+
+      const result = await buildThreadPresentation(mockAgent as unknown as BskyAgent, thread);
 
       expect(result.parentPost).toBe(parentPost);
       expect(result.directChildren).toHaveLength(3);
@@ -62,7 +75,7 @@ describe('threadPresentation', () => {
       expect(result.directChildren[2].firstChildrenSequence).toHaveLength(0);
     });
 
-    it('should follow only first child paths', () => {
+    it('should follow only first child paths', async () => {
       const parentPost = createMockPost('parent', '2024-12-09T10:00:00Z');
       const reply1 = createMockPost('reply1', '2024-12-09T10:01:00Z');
       const reply1_1 = createMockPost('reply1.1', '2024-12-09T10:02:00Z');
@@ -83,7 +96,21 @@ describe('threadPresentation', () => {
         ]),
       ]);
 
-      const result = buildThreadPresentation(thread);
+      mockAgent.getPostThread.mockImplementation((params: { uri: string }) => {
+        const mockThreads = {
+          'at://fake/reply1': createMockThread(reply1, [
+            createMockThread(reply1_1, [createMockThread(reply1_1_1)]),
+            createMockThread(reply1_2),
+          ]),
+          'at://fake/reply2': createMockThread(reply2, [createMockThread(reply2_1)]),
+        };
+        return Promise.resolve({
+          success: true,
+          data: { thread: mockThreads[params.uri] || createMockThread(parentPost) }
+        });
+      });
+
+      const result = await buildThreadPresentation(mockAgent as unknown as BskyAgent, thread);
 
       expect(result.parentPost).toBe(parentPost);
       expect(result.directChildren).toHaveLength(2);
@@ -100,7 +127,7 @@ describe('threadPresentation', () => {
       expect(result.directChildren[1].firstChildrenSequence[0]).toBe(reply2_1);
     });
 
-    it('should handle multiple independent paths', () => {
+    it('should handle multiple independent paths', async () => {
       const parentPost = createMockPost('parent', '2024-12-09T10:00:00Z');
       const reply1 = createMockPost('reply1', '2024-12-09T10:01:00Z');
       const reply2 = createMockPost('reply2', '2024-12-09T10:02:00Z');
@@ -118,7 +145,7 @@ describe('threadPresentation', () => {
         createMockThread(reply3),
       ]);
 
-      const result = buildThreadPresentation(thread);
+      const result = await buildThreadPresentation(mockAgent as unknown as BskyAgent, thread);
 
       expect(result.parentPost).toBe(parentPost);
       expect(result.directChildren).toHaveLength(3);
