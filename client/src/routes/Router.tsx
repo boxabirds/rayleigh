@@ -29,9 +29,9 @@ export default function Router() {
         <CreateCommunityPage />
       </ProtectedRoute>
 
-      <Route path={routes.community.path}>
+      <Route path={routes.communityTag.path}>
         {(params: { tag?: string }) => (
-          <ProtectedRoute path={routes.community.path}>
+          <ProtectedRoute path={routes.communityTag.path}>
             <CommunityPage tag={params.tag} />
           </ProtectedRoute>
         )}

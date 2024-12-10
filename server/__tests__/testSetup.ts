@@ -12,7 +12,7 @@ const execAsync = promisify(exec);
 const TEST_DB = 'rayleigh_test';
 
 export async function setupTestDatabase() {
-  // Create test database
+  // Drop and recreate database
   await execAsync(`dropdb --if-exists ${TEST_DB}`);
   await execAsync(`createdb ${TEST_DB}`);
   
@@ -23,31 +23,31 @@ export async function setupTestDatabase() {
     port: 5432,
     user: 'postgres',
   });
-  
-  // Read and execute migration files
-  const migrationsDir = path.join(__dirname, '../../db/migrations');
-  const migrationFiles = await fs.readdir(migrationsDir);
-  
-  for (const file of migrationFiles.sort()) {
-    const sql = await fs.readFile(path.join(migrationsDir, file), 'utf-8');
-    await migrationPool.query(sql);
-  }
-  await migrationPool.end();
 
-  // Set up test database connection
-  const pool = new Pool({
+  try {
+    const migrationsDir = path.join(__dirname, '../../db/migrations');
+    const migrationFiles = await fs.readdir(migrationsDir);
+    
+    for (const file of migrationFiles.sort()) {
+      const sql = await fs.readFile(path.join(migrationsDir, file), 'utf-8');
+      await migrationPool.query(sql);
+    }
+  } finally {
+    await migrationPool.end();
+  }
+
+  // Return main pool
+  return new Pool({
     database: TEST_DB,
     host: 'localhost',
     port: 5432,
     user: 'postgres',
   });
-
-  return pool;
 }
 
 export async function cleanupTestDatabase(pool: Pool) {
   await pool.end();
-  await execAsync(`dropdb ${TEST_DB}`);
+  await execAsync(`dropdb --if-exists ${TEST_DB}`);
 }
 
 export async function clearTestData(pool: Pool) {

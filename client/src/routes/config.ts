@@ -3,7 +3,7 @@ interface RouteConfig {
   requiresAuth: boolean;
 }
 
-const routes: Record<string, RouteConfig> = {
+const routes = {
   home: {
     path: '/',
     requiresAuth: true,
@@ -16,8 +16,8 @@ const routes: Record<string, RouteConfig> = {
     path: '/community/new',
     requiresAuth: true,
   },
-  community: {
-    path: '/community/tags/:tag',  // Will match /community/tags/something
+  communityTag: {
+    path: '/community/tag/:tag',
     requiresAuth: true,
   },
   search: {
@@ -28,6 +28,13 @@ const routes: Record<string, RouteConfig> = {
     path: '/thread/:handle/:postId',
     requiresAuth: true,
   },
-};
+} as const;
 
+export function createPath(route: keyof typeof routes, params?: Record<string, string>): string {
+  const path = routes[route].path;
+  if (!params) return path;
+  return Object.entries(params).reduce((acc, [key, value]) => acc.replace(`:${key}`, value), path);
+}
+
+export type Routes = typeof routes;
 export default routes;
