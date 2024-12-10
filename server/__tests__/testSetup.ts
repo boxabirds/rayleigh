@@ -12,19 +12,25 @@ const execAsync = promisify(exec);
 const TEST_DB = 'rayleigh_test';
 
 export async function setupTestDatabase() {
-  // Drop and recreate database
-  await execAsync(`dropdb --if-exists ${TEST_DB}`);
-  await execAsync(`createdb ${TEST_DB}`);
+  let migrationPool: Pool | null = null;
+  let pool: Pool | null = null;
   
-  // Run migrations
-  const migrationPool = new Pool({
-    database: TEST_DB,
-    host: 'localhost',
-    port: 5432,
-    user: 'postgres',
-  });
-
   try {
+    // First ensure the database is dropped
+    await execAsync(`dropdb --if-exists ${TEST_DB}`);
+    
+    // Create fresh test database
+    await execAsync(`createdb ${TEST_DB}`);
+    
+    // Run migrations
+    migrationPool = new Pool({
+      database: TEST_DB,
+      host: 'localhost',
+      port: 5432,
+      user: 'postgres',
+    });
+    
+    // Read and execute migration files
     const migrationsDir = path.join(__dirname, '../../db/migrations');
     const migrationFiles = await fs.readdir(migrationsDir);
     
@@ -32,22 +38,42 @@ export async function setupTestDatabase() {
       const sql = await fs.readFile(path.join(migrationsDir, file), 'utf-8');
       await migrationPool.query(sql);
     }
+    
+    // Create and return the main test pool
+    pool = new Pool({
+      database: TEST_DB,
+      host: 'localhost',
+      port: 5432,
+      user: 'postgres',
+    });
+    
+    return pool;
+  } catch (error) {
+    // If anything fails, try to clean up what we can
+    if (pool) await pool.end().catch(() => {});
+    if (migrationPool) await migrationPool.end().catch(() => {});
+    await execAsync(`dropdb --if-exists ${TEST_DB}`).catch(() => {});
+    throw error;
   } finally {
-    await migrationPool.end();
+    // Always close migration pool if it exists
+    if (migrationPool) await migrationPool.end().catch(() => {});
   }
-
-  // Return main pool
-  return new Pool({
-    database: TEST_DB,
-    host: 'localhost',
-    port: 5432,
-    user: 'postgres',
-  });
 }
 
-export async function cleanupTestDatabase(pool: Pool) {
-  await pool.end();
-  await execAsync(`dropdb --if-exists ${TEST_DB}`);
+export async function cleanupTestDatabase(pool: Pool | null) {
+  if (!pool) return;
+  
+  try {
+    await pool.end();
+  } catch (error) {
+    console.error('Error closing pool:', error);
+  }
+  
+  try {
+    await execAsync(`dropdb --if-exists ${TEST_DB}`);
+  } catch (error) {
+    console.error('Error dropping test database:', error);
+  }
 }
 
 export async function clearTestData(pool: Pool) {

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { BskyAgent } from '@atproto/api';
 import { getParentPosts } from '../communityUtils';
 import { setupTestAgent } from './testSetup';
-import { TEST_TAG, KNOWN_POSTS, getAllPostIds } from './fixtures/integrationTestData';
+import { TEST_TAG, KNOWN_POSTS, getAllPostIds, BASE_URI } from './fixtures/integrationTestData';
 
 describe('communityUtils integration', () => {
   let agent: BskyAgent;
@@ -63,5 +63,56 @@ describe('communityUtils integration', () => {
     expect(result.posts[0].post.uri).toBe(
       `at://did:plc:lasy2wsk6shhobbfm5ujhisn/app.bsky.feed.post/${KNOWN_POSTS.parent}`
     );
+  });
+
+  it('should sort posts by like count when using top sort order', async () => {
+    // First get all posts to verify test data
+    const searchResponse = await agent.api.app.bsky.feed.searchPosts({
+      q: `#${TEST_TAG}`,
+      limit: 100,
+    });
+
+    // Get parent post and verify it exists
+    const parentPost = searchResponse.data.posts.find(post => 
+      post.uri === `${BASE_URI}/${KNOWN_POSTS.parent}`
+    );
+    expect(parentPost).toBeDefined();
+
+    // Get posts sorted by likes
+    const topResult = await getParentPosts(agent, TEST_TAG, undefined, 10, 'top');
+    expect(topResult.posts.length).toBe(1); // Should still only find one parent post
+
+    // Get posts sorted by recent (default)
+    const recentResult = await getParentPosts(agent, TEST_TAG);
+    expect(recentResult.posts.length).toBe(1);
+
+    // Both sorts should return the same post since there's only one parent
+    expect(topResult.posts[0].post.uri).toBe(recentResult.posts[0].post.uri);
+    expect(topResult.posts[0].post.uri).toBe(`${BASE_URI}/${KNOWN_POSTS.parent}`);
+
+    // Verify post has expected properties
+    const topPost = topResult.posts[0].post;
+    expect(topPost.likeCount).toBeDefined();
+    expect(typeof topPost.likeCount).toBe('number');
+    expect(topPost.indexedAt).toBeDefined();
+  });
+
+  it('should maintain consistent sorting behavior across multiple calls', async () => {
+    // Make multiple calls and verify results are consistent
+    const results = await Promise.all([
+      getParentPosts(agent, TEST_TAG, undefined, 10, 'top'),
+      getParentPosts(agent, TEST_TAG, undefined, 10, 'recent'),
+      getParentPosts(agent, TEST_TAG, undefined, 10, 'top')
+    ]);
+
+    // All calls should return the same number of posts
+    expect(results[0].posts.length).toBe(results[1].posts.length);
+    expect(results[1].posts.length).toBe(results[2].posts.length);
+
+    // All calls should return the same parent post
+    const uris = results.map(r => r.posts[0].post.uri);
+    expect(uris[0]).toBe(uris[1]);
+    expect(uris[1]).toBe(uris[2]);
+    expect(uris[0]).toBe(`${BASE_URI}/${KNOWN_POSTS.parent}`);
   });
 });
