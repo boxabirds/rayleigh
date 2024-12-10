@@ -71,50 +71,68 @@ export async function getParentPosts(
   maxPosts: number = 10,
   sortOrder: SortOrder = 'recent'
 ): Promise<GetParentPostsResult> {
-  const response = await agent.api.app.bsky.feed.searchPosts({
-    q: `#${tag}`,
-    limit: maxPosts * 2, // Fetch more to account for filtering
-    cursor,
-  });
-
-  // Keep track of seen URIs to prevent duplicates
+  const allParentPosts: CommunityPost[] = [];
+  let currentCursor = cursor;
   const seenUris = new Set<string>();
+  
+  // Continue until we have enough parent posts
+  while (allParentPosts.length < maxPosts) {
+    const response = await agent.api.app.bsky.feed.searchPosts({
+      q: `#${tag}`,
+      limit: 20,  // Fixed page size
+      cursor: currentCursor,
+    });
 
-  // Filter to only parent posts with the tag and transform to CommunityPost format
-  const communityPosts = response.data.posts
-    .filter(post => {
-      // Skip if we've seen this URI before
-      if (seenUris.has(post.uri)) return false;
-      seenUris.add(post.uri);
+    // If no more posts or empty response, break
+    if (!response.data.posts?.length) break;
 
-      // Must be a parent post (no reply field)
-      const record = post.record as any;
-      if (record.reply) return false;
+    // Filter to find parent posts
+    const newParentPosts = response.data.posts
+      .filter(post => {
+        // Skip if we've seen this URI before
+        if (seenUris.has(post.uri)) return false;
+        seenUris.add(post.uri);
 
-      // Must have the community tag
-      const postText = record.text.toLowerCase();
-      return postText.includes(`#${tag.toLowerCase()}`);
-    })
-    .map(post => ({
-      post,
-      latestReplyAt: post.indexedAt // Start with post's own timestamp
-    }));
+        // Must be a parent post (no reply field)
+        const record = post.record as any;
+        if (record.reply) return false;
 
-  // Update latestReplyAt based on replies
-  response.data.posts.forEach(post => {
-    const reply = post.reply as ReplyRef;
-    if (!reply) return;
+        // Must have the community tag
+        const postText = record.text.toLowerCase();
+        return postText.includes(`#${tag.toLowerCase()}`);
+      })
+      .map(post => ({
+        post,
+        latestReplyAt: post.indexedAt // Start with post's own timestamp
+      }));
 
-    // Find the root post if it's in our filtered set
-    const parentPost = communityPosts.find(p => reply.root.uri === p.post.uri);
+    // Create a map for quick lookup of parent posts
+    const parentPostMap = new Map(
+      [...allParentPosts, ...newParentPosts].map(p => [p.post.uri, p])
+    );
 
-    if (parentPost && new Date(post.indexedAt) > new Date(parentPost.latestReplyAt)) {
-      parentPost.latestReplyAt = post.indexedAt;
-    }
-  });
+    // Update latestReplyAt based on replies
+    response.data.posts.forEach(post => {
+      const reply = post.reply as ReplyRef;
+      if (!reply || !reply.root?.uri || typeof reply.root.uri !== 'string') return;
+
+      // Find the root post if it exists
+      const parentPost = parentPostMap.get(reply.root.uri);
+      if (parentPost && new Date(post.indexedAt) > new Date(parentPost.latestReplyAt)) {
+        parentPost.latestReplyAt = post.indexedAt;
+      }
+    });
+
+    // Add new parent posts to our collection
+    allParentPosts.push(...newParentPosts);
+
+    // If no cursor, break
+    if (!response.data.cursor) break;
+    currentCursor = response.data.cursor;
+  }
 
   // Sort based on the specified order
-  const sortedPosts = communityPosts.sort((a, b) => {
+  const sortedPosts = allParentPosts.sort((a, b) => {
     if (sortOrder === 'top') {
       // Sort by likes, then by most recent for posts with equal likes
       const likesA = a.post.likeCount || 0;
@@ -129,7 +147,7 @@ export async function getParentPosts(
 
   return {
     posts: sortedPosts,
-    cursor: response.data.cursor,
+    cursor: currentCursor,
   };
 }
 
