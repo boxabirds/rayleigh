@@ -6,6 +6,8 @@ import type { UserProfile } from './UserSearch';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { XCircleIcon } from '@heroicons/react/24/solid';
 import debounce from 'lodash/debounce';
+import { useLocation } from 'wouter';
+import { useToast } from "@/hooks/use-toast";
 
 interface CreateCommunityProps {
   agent: BskyAgent;
@@ -43,6 +45,9 @@ export const CreateCommunity: React.FC<CreateCommunityProps> = ({
     isValid: false,
     isChecking: false
   });
+
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const checkHashtagAvailability = useCallback(
     debounce(async (tag: string) => {
@@ -103,12 +108,18 @@ export const CreateCommunity: React.FC<CreateCommunityProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
-      }).then(async (res) => {
-        if (!res.ok) {
-          const error = await res.json();
+      }).then(async (response) => {
+        if (response.ok) {
+          const community = await response.json();
+          toast({
+            title: "Success!",
+            description: `You have successfully created the '${name}' community!`,
+          });
+          setLocation(`/communities/${community.id}?newCommunity=true&communityName=${encodeURIComponent(name)}`);
+        } else {
+          const error = await response.json();
           throw new Error(error.message || 'Failed to create community');
         }
-        return res.json();
       });
 
       await onSubmit(data);

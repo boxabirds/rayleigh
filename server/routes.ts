@@ -42,7 +42,8 @@ export function registerRoutes(app: Express) {
       res.status(201).json(community);
     } catch (error) {
       console.error('Error creating community:', error);
-      if (error.code === '23505') { // PostgreSQL unique violation
+      // Type guard for PostgreSQL error
+      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
         res.status(409).json({ error: 'A community with this hashtag already exists' });
       } else {
         res.status(500).json({ error: 'Failed to create community' });
