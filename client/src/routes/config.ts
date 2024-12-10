@@ -29,7 +29,7 @@ const routes: Record<string, RouteConfig> = {
     requiresAuth: true,
   },
   thread: {
-    path: '/thread/:threadId',
+    path: '/thread/:handle/:postId',
     requiresAuth: true,
   },
 };

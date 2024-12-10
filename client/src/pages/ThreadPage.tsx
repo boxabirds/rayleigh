@@ -13,14 +13,16 @@ interface ThreadState {
 }
 
 export function ThreadPage() {
-  const params = useParams<{ threadId: string }>();
-  const threadId = params?.threadId;
+  const params = useParams<{ handle: string, postId: string }>();
+  const handle = params?.handle;
+  const postId = params?.postId;
+
   const [location, setLocation] = useLocation();
   const agent = useRequireAuth();
   
   console.log('ThreadPage render:', {
     params,
-    threadId,
+    postId,
     location,
     hasAgent: !!agent,
   });
@@ -40,24 +42,12 @@ export function ThreadPage() {
     setState(prev => ({ ...prev, loading: true, error: null }));
   };
 
-  const BackButton = () => (
-    <button
-      onClick={handleBack}
-      className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-4"
-    >
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-      </svg>
-      <span>Back</span>
-    </button>
-  );
-
   useEffect(() => {
     console.log('ThreadPage effect running');
     async function fetchThread() {
       console.log('fetchThread start');
-      if (!threadId) {
-        console.log('No threadId');
+      if (!postId) {
+        console.log('No postId');
         setState(prev => ({ ...prev, error: 'No thread ID provided', loading: false }));
         return;
       }
@@ -72,11 +62,9 @@ export function ThreadPage() {
         setState(prev => ({ ...prev, error: null, loading: true }));
         
         // Parse handle/postId format
-        const decodedPath = decodeURIComponent(threadId);
-        const [handle, postId] = decodedPath.split('/');
         
         if (!handle || !postId) {
-          setState(prev => ({ ...prev, error: 'Invalid thread path', loading: false }));
+          setState(prev => ({ ...prev, error: 'handle or postId missing from path', loading: false }));
           return;
         }
 
@@ -89,8 +77,7 @@ export function ThreadPage() {
 
         // Construct the AT URI
         const fullUri = `at://${profile.data.did}/app.bsky.feed.post/${postId}`;
-        console.log('Loading thread:', { 
-          threadId, 
+        console.log('Loading post thread:', { 
           handle,
           postId,
           did: profile.data.did,
@@ -127,13 +114,21 @@ export function ThreadPage() {
     }
 
     fetchThread();
-  }, [threadId, agent]);
+  }, [handle, postId, agent]);
 
   if (state.loading) {
     console.log('loading');
     return (
       <div className="max-w-2xl mx-auto p-4">
-        <BackButton />
+        <button
+          onClick={handleBack}
+          className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-4"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Back</span>
+        </button>
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
@@ -147,7 +142,15 @@ export function ThreadPage() {
     console.log('error');
     return (
       <div className="max-w-2xl mx-auto p-4">
-        <BackButton />
+        <button
+          onClick={handleBack}
+          className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-4"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Back</span>
+        </button>
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
           <p className="text-red-600 dark:text-red-400 mb-2">{state.error}</p>
           <button
@@ -165,7 +168,15 @@ export function ThreadPage() {
     console.log('no presentation');
     return (
       <div className="max-w-2xl mx-auto p-4">
-        <BackButton />
+        <button
+          onClick={handleBack}
+          className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-4"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Back</span>
+        </button>
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
           <p className="text-yellow-600 dark:text-yellow-400">Thread not found</p>
         </div>
@@ -198,7 +209,15 @@ export function ThreadPage() {
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <BackButton />
+      <button
+        onClick={handleBack}
+        className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-4"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>Back</span>
+      </button>
       <div className="space-y-4">
         {/* Parent Post */}
         <PostCard post={presentation.parentPost} />

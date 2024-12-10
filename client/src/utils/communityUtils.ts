@@ -74,9 +74,16 @@ export async function getParentPosts(
     cursor,
   });
 
+  // Keep track of seen URIs to prevent duplicates
+  const seenUris = new Set<string>();
+
   // Filter to only parent posts with the tag and transform to CommunityPost format
   const communityPosts = response.data.posts
     .filter(post => {
+      // Skip if we've seen this URI before
+      if (seenUris.has(post.uri)) return false;
+      seenUris.add(post.uri);
+
       // Must be a parent post (no reply field)
       const record = post.record as any;
       if (record.reply) return false;
@@ -112,4 +119,21 @@ export async function getParentPosts(
     posts: sortedPosts,
     cursor: response.data.cursor,
   };
+}
+
+export async function getCommunityByTag(agent: BskyAgent, tag: string): Promise<Community | null> {
+  try {
+    const cleanTag = tag.replace(/^#/, '');
+    const response = await fetch(`/api/communities/${cleanTag}`);
+    
+    if (!response.ok) {
+      return null;
+    }
+    
+    const community = await response.json();
+    return community;
+  } catch (error) {
+    console.error('Error fetching community:', error);
+    return null;
+  }
 }

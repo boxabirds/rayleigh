@@ -8,6 +8,7 @@ import { XCircleIcon } from '@heroicons/react/24/solid';
 import debounce from 'lodash/debounce';
 import { useLocation } from 'wouter';
 import { useToast } from "@/hooks/use-toast";
+import { getCommunityByTag } from "@/utils/communityUtils";
 
 interface CreateCommunityProps {
   agent: BskyAgent;
@@ -30,15 +31,14 @@ export const CreateCommunity: React.FC<CreateCommunityProps> = ({
   agent,
   onSubmit
 }) => {
-  const [name, setName] = useState('Photography Enthusiasts');
-  const [hashtag, setHashtag] = useState('photography');
-  const [description, setDescription] = useState('A community for sharing photography tips, gear recommendations, and beautiful shots.');
+  const [name, setName] = useState('');
+  const [hashtag, setHashtag] = useState('');
+  const [description, setDescription] = useState('');
   const [rules, setRules] = useState(`# Community Guidelines
 
-1. Share only your own work
-2. Include camera settings in your posts
-3. Be constructive in your feedback
-4. No spam or self-promotion`);
+1. Be respectful and constructive
+2. No spam or self-promotion
+3. Follow platform guidelines`);
   const [initialMembers, setInitialMembers] = useState<UserProfile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hashtagValidation, setHashtagValidation] = useState<HashtagValidation>({
@@ -50,36 +50,58 @@ export const CreateCommunity: React.FC<CreateCommunityProps> = ({
   const { toast } = useToast();
 
   const checkHashtagAvailability = useCallback(
-    debounce(async (tag: string) => {
+    async (tag: string) => {
       if (!tag) {
         setHashtagValidation({ isValid: false, isChecking: false });
         return;
       }
 
+      // Remove # prefix if present for consistency
+      const cleanTag = tag.replace(/^#/, '');
+      console.log('Checking availability for tag:', cleanTag);
+
       setHashtagValidation(prev => ({ ...prev, isChecking: true }));
       try {
-        const response = await fetch(`/api/communities/${tag}`);
-        const isAvailable = response.status === 404;
+        const community = await getCommunityByTag(agent, cleanTag);
+        console.log('Community lookup result:', community);
+        const isAvailable = !community;
         setHashtagValidation({
           isValid: isAvailable,
           isChecking: false,
           error: isAvailable ? undefined : 'Hashtag already in use for another community'
         });
       } catch (error) {
+        console.error('Error in availability check:', error);
         setHashtagValidation({
           isValid: false,
           isChecking: false,
           error: 'Error checking hashtag availability'
         });
       }
-    }, 2000),
-    []
+    },
+    [agent]
   );
 
+  // Handle URL parameter prefill
   useEffect(() => {
-    if (hashtag) {
-      checkHashtagAvailability(hashtag);
+    const params = new URLSearchParams(window.location.search);
+    const tagFromUrl = params.get('tag');
+    if (tagFromUrl) {
+      setHashtag(tagFromUrl);
+      checkHashtagAvailability(tagFromUrl);
     }
+  }, [checkHashtagAvailability]);
+
+  // Check availability whenever hashtag changes
+  useEffect(() => {
+    const debouncedCheck = debounce(() => {
+      if (hashtag) {
+        checkHashtagAvailability(hashtag);
+      }
+    }, 500);
+
+    debouncedCheck();
+    return () => debouncedCheck.cancel();
   }, [hashtag, checkHashtagAvailability]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -125,7 +147,11 @@ export const CreateCommunity: React.FC<CreateCommunityProps> = ({
       await onSubmit(data);
     } catch (error) {
       console.error('Error creating community:', error);
-      // TODO: Add error toast
+      toast({
+        title: "Error",
+        description: "Failed to create community. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -147,6 +173,7 @@ export const CreateCommunity: React.FC<CreateCommunityProps> = ({
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           placeholder="Enter community name..."
           name="name"
+          autoFocus
         />
       </div>
 

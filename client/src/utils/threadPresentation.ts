@@ -155,6 +155,8 @@ async function getFirstChildSequence(agent: BskyAgent, post: ThreadViewPost): Pr
 async function loadThread(agent: BskyAgent, uri: string): Promise<ThreadPresentation | null> {
   try {
     const normalizedUri = normalizeUri(uri);
+    console.log('Loading thread with URI:', normalizedUri);
+    
     const response = await agent.getPostThread({ 
       uri: normalizedUri,
       depth: 1,
@@ -162,14 +164,24 @@ async function loadThread(agent: BskyAgent, uri: string): Promise<ThreadPresenta
     });
 
     if (!response.success || !response.data.thread) {
+      console.log('Failed to get thread:', response);
       return null;
     }
 
     const thread = response.data.thread as ThreadViewPost;
     const record = thread.post.record as AppBskyFeedPost.Record;
+    console.log('Got thread:', { 
+      uri: thread.post.uri,
+      text: record.text,
+      hasReply: 'reply' in record,
+      parentUri: record.reply?.parent?.uri
+    });
 
+    // If this is a reply and we can get the parent thread, do so
     if (record.text && 'reply' in record && record.reply?.parent?.uri) {
       const parentUri = record.reply.parent.uri;
+      console.log('Loading parent thread:', parentUri);
+      
       const parentResponse = await agent.getPostThread({ 
         uri: parentUri,
         depth: 1,
@@ -177,21 +189,25 @@ async function loadThread(agent: BskyAgent, uri: string): Promise<ThreadPresenta
       });
 
       if (!parentResponse.success || !parentResponse.data.thread) {
-        return null;
+        console.log('Failed to get parent thread');
+        return buildThreadPresentation(agent, thread); // Pass agent to buildThreadPresentation
       }
 
       const parentThread = parentResponse.data.thread as ThreadViewPost;
       const directChildren = parentThread.replies || [];
+      console.log('Got parent thread with', directChildren.length, 'direct children');
 
       // For each direct child, get its first-child sequence
       const childrenWithSequences = await Promise.all(
-        directChildren.map(async (child) => {
-          const childThread = child as ThreadViewPost;
-          return {
-            post: childThread.post,
-            firstChildrenSequence: await getFirstChildSequence(agent, childThread)
-          };
-        })
+        directChildren
+          .filter((reply): reply is ThreadViewPost => 'post' in reply)
+          .map(async (child) => {
+            const sequence = await getFirstChildSequence(agent, child);
+            return {
+              post: child.post,
+              firstChildrenSequence: sequence
+            };
+          })
       );
 
       // Sort by creation time
@@ -207,8 +223,11 @@ async function loadThread(agent: BskyAgent, uri: string): Promise<ThreadPresenta
       };
     }
 
-    return buildThreadPresentation(thread);
+    // This is a root post, just build the presentation directly
+    console.log('Building presentation for root post');
+    return buildThreadPresentation(agent, thread);
   } catch (error) {
+    console.error('Error loading thread:', error);
     if (error instanceof Error) {
       throw error;
     }
@@ -216,21 +235,22 @@ async function loadThread(agent: BskyAgent, uri: string): Promise<ThreadPresenta
   }
 }
 
-function buildThreadPresentation(thread: ThreadViewPost): ThreadPresentation {
+async function buildThreadPresentation(agent: BskyAgent, thread: ThreadViewPost): Promise<ThreadPresentation> {
   const parentPost = thread.post;
   const directChildren = thread.replies || [];
 
   // For each direct child, get its first-child sequence
-  const directChildrenWithPaths: DirectChildPresentation[] = directChildren.map((child) => {
-    const childThread = child as ThreadViewPost;
-    return {
-      post: childThread.post,
-      firstChildrenSequence: findFirstChildPath({ 
-        post: childThread.post, 
-        replies: childThread.replies 
-      } as ThreadReply)
-    };
-  });
+  const directChildrenWithPaths: DirectChildPresentation[] = await Promise.all(
+    directChildren
+      .filter((reply): reply is ThreadViewPost => 'post' in reply)
+      .map(async (child) => {
+        const sequence = await getFirstChildSequence(agent, child);
+        return {
+          post: child.post,
+          firstChildrenSequence: sequence
+        };
+      })
+  );
 
   // Sort by creation time
   directChildrenWithPaths.sort((a: DirectChildPresentation, b: DirectChildPresentation) => {
