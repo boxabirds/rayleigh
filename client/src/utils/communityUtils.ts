@@ -31,6 +31,8 @@ export interface GetParentPostsResult {
   cursor?: string;
 }
 
+export type SortOrder = 'recent' | 'top';
+
 export async function createCommunity(
   agent: BskyAgent,
   name: string,
@@ -66,7 +68,8 @@ export async function getParentPosts(
   agent: BskyAgent,
   tag: string,
   cursor?: string,
-  maxPosts: number = 10
+  maxPosts: number = 10,
+  sortOrder: SortOrder = 'recent'
 ): Promise<GetParentPostsResult> {
   const response = await agent.api.app.bsky.feed.searchPosts({
     q: `#${tag}`,
@@ -110,10 +113,19 @@ export async function getParentPosts(
     }
   });
 
-  // Sort by most recent activity and limit to maxPosts
-  const sortedPosts = communityPosts
-    .sort((a, b) => new Date(b.latestReplyAt).getTime() - new Date(a.latestReplyAt).getTime())
-    .slice(0, maxPosts);
+  // Sort based on the specified order
+  const sortedPosts = communityPosts.sort((a, b) => {
+    if (sortOrder === 'top') {
+      // Sort by likes, then by most recent for posts with equal likes
+      const likesA = a.post.likeCount || 0;
+      const likesB = b.post.likeCount || 0;
+      if (likesA !== likesB) {
+        return likesB - likesA;
+      }
+    }
+    // For 'recent' or as tiebreaker for 'top'
+    return new Date(b.latestReplyAt).getTime() - new Date(a.latestReplyAt).getTime();
+  }).slice(0, maxPosts);
 
   return {
     posts: sortedPosts,
