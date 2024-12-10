@@ -3,9 +3,10 @@ import { useLocation } from 'wouter';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { PostCard } from '../components/PostCard';
 import { ThemeToggle } from '../components/theme-toggle';
-import { getParentPosts, CommunityPost } from '../utils/communityUtils';
+import { getParentPosts, CommunityPost, getCommunityByTag, Community } from '../utils/communityUtils';
 import { useAgent } from "@/contexts/agent";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 interface CommunityPageProps {
   tag?: string;
@@ -17,6 +18,8 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [community, setCommunity] = useState<Community | null>(null);
+  const [isCommunityLoading, setIsCommunityLoading] = useState(true);
   const agent = useAgent();
   const { toast } = useToast();
   const [location, navigate] = useLocation();
@@ -35,13 +38,47 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     }
   }, [toast]);
 
+  useEffect(() => {
+    async function fetchCommunity() {
+      if (!tag) return;
+      
+      setIsCommunityLoading(true);
+      try {
+        const cleanTag = tag.replace(/^#/, '');
+        const response = await fetch(`/api/communities/${cleanTag}`);
+        
+        if (response.ok) {
+          const communityData = await response.json();
+          setCommunity(communityData);
+        } else {
+          setCommunity(null);
+        }
+      } catch (err) {
+        console.error('Error fetching community:', err);
+        setCommunity(null);
+      } finally {
+        setIsCommunityLoading(false);
+      }
+    }
+
+    fetchCommunity();
+  }, [tag]);
+
   const fetchPosts = useCallback(async () => {
     if (!agent || isLoading || !hasMore || !tag) return;
     
     setIsLoading(true);
     try {
       const result = await getParentPosts(agent, tag, cursor);
-      setPosts(prev => [...prev, ...result.posts]);
+      setPosts(prev => {
+        // Create a Set of existing URIs for O(1) lookup
+        const existingUris = new Set(prev.map(p => p.post.uri));
+        
+        // Filter out any posts that already exist
+        const newPosts = result.posts.filter(p => !existingUris.has(p.post.uri));
+        
+        return [...prev, ...newPosts];
+      });
       setCursor(result.cursor);
       setHasMore(!!result.cursor);
       setError(null);
@@ -51,53 +88,24 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [agent, tag, cursor, isLoading, hasMore]);
+  }, [agent, isLoading, hasMore, tag, cursor]);
 
-  const handlePostClick = useCallback((post: CommunityPost) => {
-    const postId = post.post.uri.split('/').pop() || '';
-    const threadPath = `${post.post.author.handle}/${postId}`;
-    navigate(`/thread/${encodeURIComponent(threadPath)}`);
-  }, [navigate]);
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
-  React.useEffect(() => {
-    if (!tag || !agent) return;
-
-    // Reset state when tag changes
-    setPosts([]);
-    setCursor(undefined);
-    setHasMore(true);
-    setError(null);
-    setIsLoading(false);  // Reset loading state
-    
-    // Fetch first page
-    const doFetch = async () => {
-      setIsLoading(true);
-      try {
-        const result = await getParentPosts(agent, tag);
-        setPosts(result.posts);
-        setCursor(result.cursor);
-        setHasMore(!!result.cursor);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-        setError('Failed to load posts. Please try again.');
-        setHasMore(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    doFetch();
-  }, [tag, agent]);
+  const handlePostClick = (post: CommunityPost) => {
+    const postId = post.post.uri.split('/').pop();
+    const authorHandle = post.post.author.handle;
+    navigate(`/thread/${authorHandle}/${postId}`);
+  };
 
   if (!tag) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-bold">Community</h1>
-            <ThemeToggle />
-          </div>
-          <p className="text-muted-foreground">No tag selected.</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">No community specified</h1>
+          <p className="text-muted-foreground">Please select a community to view</p>
         </div>
       </div>
     );
@@ -107,7 +115,24 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold">#{tag}</h1>
+          <div>
+            <div className="flex items-center gap-4 mb-2">
+              <h1 className="text-4xl font-bold">#{tag}</h1>
+              {isCommunityLoading ? (
+                <div className="h-8 w-32 bg-accent animate-pulse rounded"></div>
+              ) : !community ? (
+                <Button
+                  onClick={() => navigate(`/community/new?tag=${tag.replace(/^#/, '')}`)}
+                  variant="outline"
+                >
+                  Claim this community
+                </Button>
+              ) : null}
+            </div>
+            {community && (
+              <h2 className="text-2xl text-muted-foreground">{community.name}</h2>
+            )}
+          </div>
           <ThemeToggle />
         </div>
 
