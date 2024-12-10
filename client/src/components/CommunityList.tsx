@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { createPath } from '../routes/config';
 
 interface Community {
   id: string;
   name: string;
   description: string;
   creatorDid: string;
+  hashtag: string;
 }
 
 interface DeleteModalProps {
@@ -73,12 +75,14 @@ interface CommunityListProps {
   communities: Community[];
   currentUserDid: string;
   onDeleteCommunity: (communityId: string) => Promise<void>;
+  showOwned?: boolean;
 }
 
 export const CommunityList: React.FC<CommunityListProps> = ({
   communities,
   currentUserDid,
   onDeleteCommunity,
+  showOwned = false,
 }) => {
   const [communityToDelete, setCommunityToDelete] = useState<Community | null>(null);
 
@@ -87,18 +91,26 @@ export const CommunityList: React.FC<CommunityListProps> = ({
       {communities.map((community) => (
         <div
           key={community.id}
-          className="bg-white p-4 rounded-lg shadow-sm border hover:shadow-md transition-shadow"
+          className="p-4 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors"
         >
           <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-lg font-semibold">{community.name}</h3>
-              <p className="text-gray-600">{community.description}</p>
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <a
+                  href={createPath('communityTag', { tag: community.hashtag })}
+                  className="text-lg font-semibold hover:underline"
+                >
+                  {community.name}
+                </a>
+                <span className="text-sm text-muted-foreground ml-4">#{community.hashtag}</span>
+              </div>
+              <p className="text-sm text-muted-foreground">{community.description}</p>
             </div>
-            {community.creatorDid === currentUserDid && (
+            {showOwned && community.creatorDid === currentUserDid && (
               <button
                 onClick={() => setCommunityToDelete(community)}
-                className="text-gray-400 hover:text-red-600 p-2"
-                aria-label="Delete community"
+                className="p-2 text-destructive hover:bg-destructive/10 rounded-md transition-colors ml-4"
+                title="Delete community"
               >
                 <TrashIcon className="h-5 w-5" />
               </button>
@@ -111,7 +123,10 @@ export const CommunityList: React.FC<CommunityListProps> = ({
         <DeleteModal
           community={communityToDelete}
           onClose={() => setCommunityToDelete(null)}
-          onConfirm={() => onDeleteCommunity(communityToDelete.id)}
+          onConfirm={async () => {
+            await onDeleteCommunity(communityToDelete.id);
+            setCommunityToDelete(null);
+          }}
         />
       )}
     </div>

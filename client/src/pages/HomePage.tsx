@@ -4,6 +4,7 @@ import { ProfileMenu } from "@/components/ProfileMenu";
 import { useIsAuthenticated, useAgent } from '../contexts/agent';
 import { CommunityList } from "@/components/CommunityList";
 import HelloWorld from "../components/HelloWorld";
+import { createPath } from '../routes/config';
 
 interface Community {
   id: string;
@@ -16,11 +17,14 @@ export default function HomePage() {
   const isAuthenticated = useIsAuthenticated();
   const agent = useAgent();
   const [communities, setCommunities] = useState<Community[]>([]);
+  const [ownedCommunities, setOwnedCommunities] = useState<Community[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingOwned, setIsLoadingOwned] = useState(true);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchCommunities();
+      fetchOwnedCommunities();
     }
   }, [isAuthenticated]);
 
@@ -37,6 +41,20 @@ export default function HomePage() {
     }
   };
 
+  const fetchOwnedCommunities = async () => {
+    try {
+      if (!agent?.session?.did) return;
+      const response = await fetch(`/api/community/owner?did=${agent.session.did}`);
+      if (!response.ok) throw new Error('Failed to fetch owned communities');
+      const data = await response.json();
+      setOwnedCommunities(data);
+    } catch (error) {
+      console.error('Error fetching owned communities:', error);
+    } finally {
+      setIsLoadingOwned(false);
+    }
+  };
+
   const handleDeleteCommunity = async (communityId: string) => {
     try {
       const response = await fetch(`/api/communities/${communityId}`, {
@@ -44,6 +62,7 @@ export default function HomePage() {
       });
       if (!response.ok) throw new Error('Failed to delete community');
       setCommunities(communities.filter(c => c.id !== communityId));
+      setOwnedCommunities(ownedCommunities.filter(c => c.id !== communityId));
     } catch (error) {
       console.error('Error deleting community:', error);
     }
@@ -76,35 +95,56 @@ export default function HomePage() {
         <div className="max-w-feed mx-auto px-4 py-6">
           {isAuthenticated ? (
             <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-semibold">My Communities</h2>
-                <a
-                  href="/communities/new"
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-                >
-                  Create Community
-                </a>
-              </div>
-              
-              {isLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Loading communities...
-                </div>
-              ) : communities.length > 0 ? (
-                <CommunityList
-                  communities={communities}
-                  currentUserDid={agent?.session?.did || ''}
-                  onDeleteCommunity={handleDeleteCommunity}
-                />
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  You're not part of any communities yet.
-                  <br />
-                  <a href="/communities/new" className="text-primary hover:underline">
-                    Create your first community
+              {/* Owned Communities Section */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-semibold">My Communities</h2>
+                  <a
+                    href={createPath('communityNew')}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                  >
+                    Create Community
                   </a>
                 </div>
-              )}
+                
+                {isLoadingOwned ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Loading owned communities...
+                  </div>
+                ) : ownedCommunities.length > 0 ? (
+                  <CommunityList
+                    communities={ownedCommunities}
+                    currentUserDid={agent?.session?.did || ''}
+                    onDeleteCommunity={handleDeleteCommunity}
+                    showOwned={true}
+                  />
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground border rounded-lg bg-muted/50">
+                    You don't own any communities yet.
+                  </div>
+                )}
+              </div>
+
+              {/* Member Communities Section */}
+              <div>
+                <h2 className="text-2xl font-semibold mb-4">Other Communities I'm In</h2>
+                {isLoading ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Loading communities...
+                  </div>
+                ) : communities.length > 0 ? (
+                  <CommunityList
+                    communities={communities}
+                    currentUserDid={agent?.session?.did || ''}
+                    onDeleteCommunity={handleDeleteCommunity}
+                    showOwned={false}
+                  />
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground border rounded-lg bg-muted/50">
+                    You're not a member of any other communities yet.
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="text-center py-12">

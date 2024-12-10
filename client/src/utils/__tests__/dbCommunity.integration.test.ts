@@ -8,7 +8,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
-import { setupTestDatabase, cleanupTestDatabase, clearTestData, setupTestAgent } from './testSetup';
+import { setupTestAgent } from './testSetup';
+import { setupTestDatabase, cleanupTestDatabase, clearTestData } from '../../../../server/__tests__/testSetup';
 
 const execAsync = promisify(exec);
 
