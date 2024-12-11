@@ -8,29 +8,30 @@ import path from 'path';
 import { BskyAgent } from '@atproto/api';
 import { setupTestAgent } from '../../client/src/utils/__tests__/testSetup';
 
-
 // PostgreSQL error codes not covered by pg-error-codes
 enum PgErrorCode {
   DUPLICATE_DATABASE = '42P04',
 }
 
 const execAsync = promisify(exec);
-const TEST_DB = 'rayleigh_test';
 
-export async function setupTestDatabase() {
+export async function setupTestDatabase(dbName: string = 'rayleigh_test') {
   let migrationPool: Pool | null = null;
   let pool: Pool | null = null;
   
   try {
     // First ensure the database is dropped
-    await execAsync(`dropdb --if-exists ${TEST_DB}`);
+    console.log(`Dropping existing test database ${dbName} if it exists...`);
+    await execAsync(`dropdb --if-exists ${dbName}`);
+    console.log(`Database ${dbName} dropped successfully, or did not exist.`);
     
     // Create fresh test database
-    await execAsync(`createdb ${TEST_DB}`);
+    console.log(`Creating a fresh test database ${dbName}...`);
+    await execAsync(`createdb ${dbName}`);
     
     // Run migrations
     migrationPool = new Pool({
-      database: TEST_DB,
+      database: dbName,
       host: 'localhost',
       port: 5432,
       user: 'postgres',
@@ -47,7 +48,7 @@ export async function setupTestDatabase() {
     
     // Create and return the main test pool
     pool = new Pool({
-      database: TEST_DB,
+      database: dbName,
       host: 'localhost',
       port: 5432,
       user: 'postgres',
@@ -58,7 +59,7 @@ export async function setupTestDatabase() {
     // If anything fails, try to clean up what we can
     if (pool) await pool.end().catch(() => {});
     if (migrationPool) await migrationPool.end().catch(() => {});
-    await execAsync(`dropdb --if-exists ${TEST_DB}`).catch(() => {});
+    await execAsync(`dropdb --if-exists ${dbName}`).catch(() => {});
     throw error;
   } finally {
     // Always close migration pool if it exists
@@ -66,7 +67,7 @@ export async function setupTestDatabase() {
   }
 }
 
-export async function cleanupTestDatabase(pool: Pool | null) {
+export async function cleanupTestDatabase(pool: Pool | null, dbName: string = 'rayleigh_test') {
   if (!pool) return;
   
   try {
@@ -76,7 +77,7 @@ export async function cleanupTestDatabase(pool: Pool | null) {
   }
   
   try {
-    await execAsync(`dropdb --if-exists ${TEST_DB}`);
+    await execAsync(`dropdb --if-exists ${dbName}`);
   } catch (error: unknown) {
     console.error('Error dropping test database:', error);
   }
@@ -90,7 +91,7 @@ export async function clearTestData(pool: Pool) {
 
 export { setupTestAgent };
 
-async function createTestDatabase() {
+async function createTestDatabase(dbName: string = 'rayleigh_test') {
   // Connect with no specific database to create the test db
   const setupPool = new Pool({
     database: undefined,
@@ -100,7 +101,7 @@ async function createTestDatabase() {
   });
 
   try {
-    await setupPool.query(`CREATE DATABASE ${TEST_DB}`);
+    await setupPool.query(`CREATE DATABASE ${dbName}`);
   } catch (error: any) {
     if (error instanceof Error && (error as any).code !== PgErrorCode.DUPLICATE_DATABASE) {
       throw error;
