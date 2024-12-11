@@ -8,6 +8,12 @@ import path from 'path';
 import { BskyAgent } from '@atproto/api';
 import { setupTestAgent } from '../../client/src/utils/__tests__/testSetup';
 
+
+// PostgreSQL error codes not covered by pg-error-codes
+enum PgErrorCode {
+  DUPLICATE_DATABASE = '42P04',
+}
+
 const execAsync = promisify(exec);
 const TEST_DB = 'rayleigh_test';
 
@@ -48,7 +54,7 @@ export async function setupTestDatabase() {
     });
     
     return pool;
-  } catch (error) {
+  } catch (error: unknown) {
     // If anything fails, try to clean up what we can
     if (pool) await pool.end().catch(() => {});
     if (migrationPool) await migrationPool.end().catch(() => {});
@@ -65,13 +71,13 @@ export async function cleanupTestDatabase(pool: Pool | null) {
   
   try {
     await pool.end();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error closing pool:', error);
   }
   
   try {
     await execAsync(`dropdb --if-exists ${TEST_DB}`);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error dropping test database:', error);
   }
 }
@@ -83,3 +89,23 @@ export async function clearTestData(pool: Pool) {
 }
 
 export { setupTestAgent };
+
+async function createTestDatabase() {
+  // Connect with no specific database to create the test db
+  const setupPool = new Pool({
+    database: undefined,
+    host: 'localhost',
+    port: 5432,
+    user: 'postgres',
+  });
+
+  try {
+    await setupPool.query(`CREATE DATABASE ${TEST_DB}`);
+  } catch (error: any) {
+    if (error instanceof Error && (error as any).code !== PgErrorCode.DUPLICATE_DATABASE) {
+      throw error;
+    }
+  } finally {
+    await setupPool.end();
+  }
+}
