@@ -65,8 +65,26 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     fetchCommunity();
   }, [tag]);
 
-  const fetchPosts = useCallback(async () => {
+  const loadInitialPosts = useCallback(async () => {
     if (!agent || isLoading || !tag) return;
+    
+    setIsLoading(true);
+    try {
+      const result = await getParentPosts(agent, tag, undefined, POSTS_PER_PAGE);
+      setPosts(result.posts);
+      setCursor(result.cursor);
+      setHasMore(result.posts.length === POSTS_PER_PAGE);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch posts');
+      setHasMore(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [agent, tag]);
+
+  const loadMorePosts = useCallback(async () => {
+    if (!agent || isLoading || !tag || !cursor) return;
     
     setIsLoading(true);
     try {
@@ -81,14 +99,14 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [agent, isLoading, tag, cursor]);
+  }, [agent, tag, cursor]);
 
   useEffect(() => {
     if (!tag || !agent) return;
     setPosts([]);
     setCursor(undefined);
     setHasMore(true);
-    fetchPosts(); // Load initial 10 posts
+    loadInitialPosts();
   }, [tag, agent]);
 
   const handlePostClick = (post: CommunityPost) => {
@@ -170,7 +188,7 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
           {!isLoading && (
             hasMore ? (
               <button
-                onClick={() => fetchPosts()}
+                onClick={loadMorePosts}
                 className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                 aria-label="Load more posts"
               >
