@@ -62,9 +62,9 @@ export async function createCommunity(input: CreateCommunityInput, testDb?: Node
   }
 }
 
-export async function getCommunity(hashtag: string) {
+export async function getCommunity(hashtag: string, db: NodePgDatabase<typeof schema> = defaultDb) {
   try {
-    const [community] = await defaultDb
+    const [community] = await db
       .select()
       .from(communities)
       .where(eq(communities.hashtag, hashtag))
@@ -74,7 +74,7 @@ export async function getCommunity(hashtag: string) {
       return null;
     }
 
-    const members = await defaultDb
+    const members = await db
       .select()
       .from(communityMembers)
       .where(eq(communityMembers.communityId, community.id));
@@ -85,59 +85,6 @@ export async function getCommunity(hashtag: string) {
     };
   } catch (error) {
     console.error('Error in getCommunity:', error);
-    throw error;
-  }
-}
-
-export async function getOwnedCommunitiesWithDb(
-  ownerDid: string,
-  db: NodePgDatabase<typeof schema>
-) {
-  try {
-    const ownedCommunities = await db
-      .select({
-        id: communities.id,
-        name: communities.name,
-        hashtag: communities.hashtag,
-        createdAt: communities.createdAt,
-      })
-      .from(communities)
-      .innerJoin(
-        communityMembers,
-        and(
-          eq(communities.id, communityMembers.communityId),
-          eq(communityMembers.memberDid, ownerDid),
-          eq(communityMembers.role, 'owner')
-        )
-      )
-      .orderBy(communities.createdAt);
-
-    return ownedCommunities;
-  } catch (error) {
-    console.error('Error in getOwnedCommunities:', error);
-    throw error;
-  }
-}
-
-export async function deleteCommunityWithDb(
-  communityId: string,
-  db: NodePgDatabase<typeof schema>
-) {
-  try {
-    // Delete members first due to foreign key constraint
-    await db
-      .delete(communityMembers)
-      .where(eq(communityMembers.communityId, communityId));
-
-    // Then delete the community
-    const [deletedCommunity] = await db
-      .delete(communities)
-      .where(eq(communities.id, communityId))
-      .returning();
-
-    return deletedCommunity;
-  } catch (error) {
-    console.error('Error in deleteCommunity:', error);
     throw error;
   }
 }
