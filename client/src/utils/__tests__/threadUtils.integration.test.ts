@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { BskyAgent } from '@atproto/api';
 import { loadThread } from '../threadUtils';
-import { PostRecord } from '../types';
+import { PostRecord } from '../../types';
 import { setupTestAgent } from './testSetup';
 import { TEST_TAG, KNOWN_POSTS, getPostUri } from './fixtures/integrationTestData';
 
@@ -10,10 +10,11 @@ describe('threadUtils integration', () => {
     try {
       console.log('Setting up agent for test...');
       const agent = await setupTestAgent();
-      console.log('Agent setup complete');
+      console.log('Agent setup complete. Agent authenticated:', agent.session !== null);
 
       // Use the parent post from our test data
-      const postUri = getPostUri(KNOWN_POSTS.parent);
+      const postUri = getPostUri(KNOWN_POSTS.parents[0]);
+      console.log('Attempting to load thread with URI:', postUri);
       
       // Test with full at:// format
       const thread = await loadThread(agent, postUri.replace('at://', ''));
@@ -32,10 +33,11 @@ describe('threadUtils integration', () => {
     try {
       console.log('Setting up agent for test...');
       const agent = await setupTestAgent();
-      console.log('Agent setup complete');
+      console.log('Agent setup complete. Agent authenticated:', agent.session !== null);
 
       // Use the parent post URI
-      const postUri = getPostUri(KNOWN_POSTS.parent);
+      const postUri = getPostUri(KNOWN_POSTS.parents[0]);
+      console.log('Attempting to load thread with URI:', postUri);
       
       // Simulate PostCard URL encoding - remove at:// prefix first
       const normalizedUri = postUri.replace('at://', '');
@@ -60,10 +62,11 @@ describe('threadUtils integration', () => {
     try {
       console.log('Setting up agent for test...');
       const agent = await setupTestAgent();
-      console.log('Agent setup complete');
+      console.log('Agent setup complete. Agent authenticated:', agent.session !== null);
 
       // Use the parent post and its first child
-      const rootPostUri = getPostUri(KNOWN_POSTS.parent);
+      const rootPostUri = getPostUri(KNOWN_POSTS.parents[0]);
+      console.log('Attempting to load thread with URI:', rootPostUri);
       const firstChild = KNOWN_POSTS.children[0];
       const firstChildUri = getPostUri(firstChild.id);
       
@@ -84,7 +87,7 @@ describe('threadUtils integration', () => {
     try {
       console.log('Setting up agent for test...');
       const agent = await setupTestAgent();
-      console.log('Agent setup complete');
+      console.log('Agent setup complete. Agent authenticated:', agent.session !== null);
 
       const badUris = [
         'not-a-uri',
@@ -94,6 +97,7 @@ describe('threadUtils integration', () => {
       ];
 
       for (const uri of badUris) {
+        console.log('Attempting to load thread with URI:', uri);
         await expect(loadThread(agent, uri)).rejects.toThrow('Invalid thread URI');
       }
     } catch (error) {

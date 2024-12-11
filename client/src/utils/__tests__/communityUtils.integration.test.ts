@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { BskyAgent } from '@atproto/api';
 import { getParentPosts } from '../communityUtils';
 import { setupTestAgent } from './testSetup';
-import { TEST_TAG, KNOWN_POSTS, getAllPostIds, BASE_URI } from './fixtures/integrationTestData';
+import { TEST_TAG, KNOWN_POSTS, getAllPostIds, getPostUri } from './fixtures/integrationTestData';
 
 describe('communityUtils integration', () => {
   let agent: BskyAgent;
@@ -79,7 +79,7 @@ describe('communityUtils integration', () => {
 
     // Get parent post and verify it exists
     const parentPost = searchResponse.data.posts.find(post => 
-      post.uri === `${BASE_URI}/${KNOWN_POSTS.parents[0]}`
+      post.uri === getPostUri(KNOWN_POSTS.parents[0])
     );
     expect(parentPost).toBeDefined();
 
@@ -117,6 +117,6 @@ describe('communityUtils integration', () => {
     const uris = results.map(r => r.posts.map(p => p.post.uri));
     expect(uris[0]).toEqual(uris[1]);
     expect(uris[1]).toEqual(uris[2]);
-    expect(uris[0]).toEqual(KNOWN_POSTS.parents.map(id => `${BASE_URI}/${id}`));
+    expect(uris[0]).toEqual(KNOWN_POSTS.parents.map(id => getPostUri(id)));
   });
 });

@@ -4,10 +4,10 @@ export const TEST_TAG = 'rayleighintegrationtest1';
 export const KNOWN_POSTS = {
   // Parent posts
   parents: [
-    '3lcvgo7r7w22p',  // Parent 1 (original)
-    '3lcyctkrfi22u',  // Parent 2
-    '3lcycts5yrc2u',  // Parent 3
     '3lcycuehwrc2u',  // Parent 4
+    '3lcycts5yrc2u',  // Parent 3
+    '3lcyctkrfi22u',  // Parent 2
+    '3lcvgo7r7w22p',  // Parent 1 (original)
   ],
   // Child posts under Parent 1
   children: [
@@ -38,10 +38,16 @@ export function getAllPostIds(node: { id: string, children: any[] }): string[] {
   return ids;
 }
 
-// Base URI for all test posts
-export const BASE_URI = 'at://did:plc:lasy2wsk6shhobbfm5ujhisn/app.bsky.feed.post';
+// Base URIs for test posts (we have posts from two different DIDs)
+const NEW_DID = 'at://did:plc:x4ggsw6n63rbissb7h7xlheq/app.bsky.feed.post';
+const OLD_DID = 'at://did:plc:lasy2wsk6shhobbfm5ujhisn/app.bsky.feed.post';
 
-// Helper to create full URIs
+// Helper to create full URIs - handle posts from different DIDs
 export function getPostUri(postId: string): string {
-  return `${BASE_URI}/${postId}`;
+  // First three parent posts are from the new DID
+  if (postId === '3lcycuehwrc2u' || postId === '3lcycts5yrc2u' || postId === '3lcyctkrfi22u') {
+    return `${NEW_DID}/${postId}`;
+  }
+  // All other posts are from the old DID
+  return `${OLD_DID}/${postId}`;
 }

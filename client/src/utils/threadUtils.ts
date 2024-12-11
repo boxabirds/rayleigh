@@ -89,13 +89,18 @@ export async function loadThread(agent: BskyAgent, uri: string): Promise<Thread>
       depth: 100,
       parentHeight: 0,
     }).catch(error => {
+      console.error('Thread fetch error:', {
+        status: error.status,
+        message: error.message,
+        uri: atUri
+      });
       if (error.status === 404) {
         throw new ThreadLoadError('Thread not found');
       }
       if (error.status === 400) {
         throw new ThreadLoadError('Invalid thread URI');
       }
-      throw new ThreadLoadError('Failed to fetch thread from server');
+      throw new ThreadLoadError(`Failed to fetch thread from server: ${error.message}`);
     });
 
     if (!threadResponse.success) {
