@@ -283,6 +283,10 @@ export default function AuthPage() {
                         />
                       </FormControl>
                       <FormMessage />
+                      <p className="text-sm text-[#42576C] mt-1">
+                        For your own security please use an <a href="https://bsky.app/settings/app-passwords" className="text-[#1083FE] hover:underline" target="_blank" rel="noopener noreferrer">application password</a> to use Rayleigh with your Bluesky credentials.
+                      </p>
+
                     </FormItem>
                   )}
                 />
