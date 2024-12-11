@@ -124,6 +124,48 @@ export async function getOwnedCommunities(
     throw error;
   }
 }
+
+export async function getCommunityMembers(
+  hashtag: string,
+  did: string,
+  db: NodePgDatabase<typeof schema> = defaultDb
+): Promise<string[] | null> {
+  try {
+    // Check if user is a member of the community in a single query
+    const [membership] = await db
+      .select({
+        communityId: communities.id
+      })
+      .from(communities)
+      .innerJoin(
+        communityMembers,
+        and(
+          eq(communityMembers.communityId, communities.id),
+          eq(communityMembers.memberDid, did)
+        )
+      )
+      .where(eq(communities.hashtag, hashtag))
+      .limit(1);
+
+    if (!membership) {
+      return null;
+    }
+
+    // Get all member DIDs for the community
+    const members = await db
+      .select({
+        memberDid: communityMembers.memberDid
+      })
+      .from(communityMembers)
+      .where(eq(communityMembers.communityId, membership.communityId));
+
+    return members.map(m => m.memberDid);
+  } catch (error) {
+    console.error('Error in getCommunityMembers:', error);
+    throw error;
+  }
+}
+
 export async function deleteCommunity(
   communityId: string,
   db: NodePgDatabase<typeof schema> = defaultDb
