@@ -14,7 +14,7 @@
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate:pg",
     "db:migrate": "drizzle-kit migrate",
-    "test": "vitest run",
+    "test": "vitest run --exclude e2e/**",
     "test:watch": "vitest --watch --changed",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
