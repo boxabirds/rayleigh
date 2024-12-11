@@ -64,8 +64,8 @@ describe('threadUtils integration', () => {
       const agent = await setupTestAgent();
       console.log('Agent setup complete. Agent authenticated:', agent.session !== null);
 
-      // Use the parent post and its first child
-      const rootPostUri = getPostUri(KNOWN_POSTS.parents[0]);
+      // Use Parent 1 (original) which has the children
+      const rootPostUri = getPostUri(KNOWN_POSTS.parents[3]);  
       console.log('Attempting to load thread with URI:', rootPostUri);
       const firstChild = KNOWN_POSTS.children[0];
       const firstChildUri = getPostUri(firstChild.id);
