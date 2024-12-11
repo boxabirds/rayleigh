@@ -18,12 +18,12 @@ describe('Community Integration Tests', () => {
   let agent: BskyAgent;
 
   beforeAll(async () => {
-    pool = await setupTestDatabase();
+    pool = await setupTestDatabase('dbcommunity_integration_test');
     agent = await setupTestAgent();
   });
 
   afterAll(async () => {
-    await cleanupTestDatabase(pool);
+    await cleanupTestDatabase(pool, 'dbcommunity_integration_test');
   });
 
   afterEach(async () => {

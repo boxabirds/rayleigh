@@ -7,7 +7,7 @@ export default {
   dbCredentials: {
     host: 'localhost',
     port: 5432,
-    user: 'julian',
+    user: 'postgres',
     database: 'rayleigh',
     ssl: false
   },

@@ -13,9 +13,11 @@ describe('API Routes Integration Tests', () => {
   let pool: Pool;
   let agent: BskyAgent;
   let app: express.Application;
+  let databaseName: string;
 
   beforeAll(async () => {
-    pool = await setupTestDatabase();
+    databaseName = 'routes_integration_test';
+    pool = await setupTestDatabase(databaseName);
     agent = await setupTestAgent();
     
     // Set up Express app with test database
@@ -26,7 +28,7 @@ describe('API Routes Integration Tests', () => {
   });
 
   afterAll(async () => {
-    await cleanupTestDatabase(pool);
+    await cleanupTestDatabase(pool, databaseName);
   });
 
   afterEach(async () => {
