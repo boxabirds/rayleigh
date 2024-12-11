@@ -40,3 +40,28 @@ export interface ThreadViewPost {
   parent?: ThreadViewPost;
   replies?: ThreadViewPost[];
 }
+
+// These types match what comes from the server
+export interface Community {
+  id: string;
+  name: string;
+  description: string;
+  rules: string;
+  hashtag: string;
+  creatorDid: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommunityMember {
+  communityId: string;
+  memberDid: string;
+  role: 'owner' | 'admin' | 'member';
+  joinedAt: string;
+}
+
+export interface CommunityTag {
+  communityId: string;
+  tag: string;
+  type: 'post' | 'channel';
+}

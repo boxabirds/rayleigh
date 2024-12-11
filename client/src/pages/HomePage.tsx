@@ -5,13 +5,7 @@ import { useIsAuthenticated, useAgent } from '../contexts/agent';
 import { CommunityList } from "@/components/CommunityList";
 import HelloWorld from "../components/HelloWorld";
 import { createPath } from '../routes/config';
-
-interface Community {
-  id: string;
-  name: string;
-  description: string;
-  creatorDid: string;
-}
+import { type Community } from '../types';
 
 export default function HomePage() {
   const isAuthenticated = useIsAuthenticated();
