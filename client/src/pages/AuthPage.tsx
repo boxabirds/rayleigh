@@ -154,7 +154,7 @@ export default function AuthPage() {
         <div className="max-w-md w-full">
           <div className="text-[#42576C] text-2xl font-extrabold text-right"></div>
           <div className="text-[#1083FE] text-4xl font-extrabold text-right">Sign in</div>
-          <div className="text-[#42576C] text-lg font-semibold mt-3 max-w-[400px] text-right">
+          <div className="text-[#42576C] text-lg font-semibold mt-3 text-right">
             Enter your username and password
           </div>
         </div>
@@ -224,6 +224,7 @@ export default function AuthPage() {
                         <Input
                           {...field}
                           className="bg-[#F1F3F5] border-[#D4DBE2] focus:border-[#1083FE] focus:ring-[#1083FE]"
+                          autoFocus
                           disabled={isLoading}
                         />
                       </FormControl>

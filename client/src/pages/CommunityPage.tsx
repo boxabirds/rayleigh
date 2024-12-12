@@ -26,12 +26,13 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
   const agent = useAgent();
   const { toast } = useToast();
   const [location, navigate] = useLocation();
+  const [urlParams] = useState(() => new URLSearchParams(window.location.search));
+  const includeAll = urlParams.get('scope') === 'all';
 
   useEffect(() => {
     // Check URL parameters for newCommunity flag
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('newCommunity') === 'true') {
-      const communityName = params.get('communityName');
+    if (urlParams.get('newCommunity') === 'true') {
+      const communityName = urlParams.get('communityName');
       if (communityName) {
         toast({
           title: "Success!",
@@ -39,7 +40,7 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
         });
       }
     }
-  }, [toast]);
+  }, [toast, urlParams]);
 
   useEffect(() => {
     async function fetchCommunity() {
@@ -97,61 +98,26 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     fetchMembers();
   }, [tag, agent?.session?.did, community]);
 
-  const loadInitialPosts = useCallback(async () => {
-    if (!agent || isLoading || !tag) return;
-    
-    setIsLoading(true);
-    try {
-      // Check URL parameters for scope
-      const params = new URLSearchParams(window.location.search);
-      const includeAll = params.get('scope') === 'all';
-      
-      // Only filter by members if there's a community
-      const memberFilter = community ? members : undefined;
-      
-      const result = await getParentPosts(
-        agent, 
-        tag, 
-        undefined, 
-        POSTS_PER_PAGE,
-        'recent',
-        memberFilter,
-        includeAll
-      );
-      setPosts(result.posts);
-      setCursor(result.cursor);
-      setHasMore(result.posts.length === POSTS_PER_PAGE);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch posts');
-      setHasMore(false);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [agent, tag, members, community]);
+  const loadPosts = useCallback(async (isInitialLoad = false) => {
+    if (!agent || isLoading || !tag || (!isInitialLoad && !cursor)) return;
 
-  const loadMorePosts = useCallback(async () => {
-    if (!agent || isLoading || !tag || !cursor) return;
-    
     setIsLoading(true);
     try {
-      // Check URL parameters for scope
-      const params = new URLSearchParams(window.location.search);
-      const includeAll = params.get('scope') === 'all';
-      
       // Only filter by members if there's a community
       const memberFilter = community ? members : undefined;
-      
+      console.log('memberFilter', memberFilter);
+
       const result = await getParentPosts(
-        agent, 
-        tag, 
-        cursor, 
+        agent,
+        tag,
+        isInitialLoad ? undefined : cursor,
         POSTS_PER_PAGE,
         'recent',
         memberFilter,
         includeAll
       );
-      setPosts(prev => [...prev, ...result.posts]);
+
+      setPosts(prev => (isInitialLoad ? result.posts : [...prev, ...result.posts]));
       setCursor(result.cursor);
       setHasMore(result.posts.length === POSTS_PER_PAGE);
       setError(null);
@@ -161,15 +127,19 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [agent, tag, cursor, members, community]);
+  }, [agent, tag, cursor, members, community, includeAll]);
 
   useEffect(() => {
     if (!tag || !agent) return;
     setPosts([]);
     setCursor(undefined);
     setHasMore(true);
-    loadInitialPosts();
+    loadPosts(true); // Initial load
   }, [tag, agent]);
+
+  const handleLoadMore = () => {
+    loadPosts(false);
+  };
 
   const handlePostClick = (post: CommunityPost) => {
     const postId = post.post.uri.split('/').pop();
@@ -250,7 +220,7 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
           {!isLoading && (
             hasMore ? (
               <button
-                onClick={loadMorePosts}
+                onClick={handleLoadMore}
                 className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                 aria-label="Load more posts"
               >
