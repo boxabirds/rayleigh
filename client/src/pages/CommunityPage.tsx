@@ -1,36 +1,38 @@
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { useRequireAuth } from '../hooks/useRequireAuth';
 import { PostCard } from '../components/PostCard';
 import { ThemeToggle } from '../components/theme-toggle';
-import { getParentPosts, CommunityPost, getCommunityByTag, Community } from '../utils/communityUtils';
-import { useAgent } from "@/contexts/agent";
+import { CommunityPost } from '../utils/communityUtils';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { useCommunity } from '../hooks/useCommunity';
+import { useParentPosts } from '../hooks/useParentPosts';
+import { createPath } from '../routes/config';
+import { parseAtUri } from '../utils/threadUtils';
 
 interface CommunityPageProps {
-  tag?: string;
+  tag: string;
 }
 
 export default function CommunityPage({ tag }: CommunityPageProps) {
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
-  const [community, setCommunity] = useState<Community | null>(null);
-  const [isCommunityLoading, setIsCommunityLoading] = useState(true);
-  const [members, setMembers] = useState<Set<string>>(new Set());
-  const [isMembersLoading, setIsMembersLoading] = useState(true);
-  const POSTS_PER_PAGE = 10;
-  const agent = useAgent();
   const { toast } = useToast();
   const [location, navigate] = useLocation();
   const [urlParams] = useState(() => new URLSearchParams(window.location.search));
   const includeAll = urlParams.get('scope') === 'all';
 
+  // Use custom hooks
+  const { community, isLoading: isCommunityLoading } = useCommunity(tag);
+  const { 
+    posts, 
+    isLoading: isPostsLoading, 
+    error,
+    hasMore,
+    loadMore,
+    refresh
+  } = useParentPosts(tag, community);
+
+  // Check for new community toast
   useEffect(() => {
-    // Check URL parameters for newCommunity flag
     if (urlParams.get('newCommunity') === 'true') {
       const communityName = urlParams.get('communityName');
       if (communityName) {
@@ -42,109 +44,10 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     }
   }, [toast, urlParams]);
 
-  useEffect(() => {
-    async function fetchCommunity() {
-      if (!tag) return;
-      
-      setIsCommunityLoading(true);
-      try {
-        const cleanTag = tag.replace(/^#/, '');
-        const response = await fetch(`/api/communities/${cleanTag}`);
-        
-        if (response.ok) {
-          const communityData = await response.json();
-          setCommunity(communityData);
-        } else {
-          setCommunity(null);
-        }
-      } catch (err) {
-        console.error('Error fetching community:', err);
-        setCommunity(null);
-      } finally {
-        setIsCommunityLoading(false);
-      }
-    }
-
-    fetchCommunity();
-  }, [tag]);
-
-  useEffect(() => {
-    async function fetchMembers() {
-      if (!tag || !agent?.session?.did || !community) return;
-      
-      setIsMembersLoading(true);
-      try {
-        const cleanTag = tag.replace(/^#/, '');
-        const response = await fetch(`/api/community/${cleanTag}/members`, {
-          headers: {
-            'x-did': agent.session.did
-          }
-        });
-        
-        if (response.ok) {
-          const { members: membersList } = await response.json();
-          setMembers(new Set(membersList));
-        } else {
-          setMembers(new Set());
-        }
-      } catch (err) {
-        console.error('Error fetching members:', err);
-        setMembers(new Set());
-      } finally {
-        setIsMembersLoading(false);
-      }
-    }
-
-    fetchMembers();
-  }, [tag, agent?.session?.did, community]);
-
-  const loadPosts = useCallback(async (isInitialLoad = false) => {
-    if (!agent || isLoading || !tag || (!isInitialLoad && !cursor)) return;
-
-    setIsLoading(true);
-    try {
-      // Only filter by members if there's a community
-      const memberFilter = community ? members : undefined;
-      console.log('memberFilter', memberFilter);
-
-      const result = await getParentPosts(
-        agent,
-        tag,
-        isInitialLoad ? undefined : cursor,
-        POSTS_PER_PAGE,
-        'recent',
-        memberFilter,
-        includeAll
-      );
-
-      setPosts(prev => (isInitialLoad ? result.posts : [...prev, ...result.posts]));
-      setCursor(result.cursor);
-      setHasMore(result.posts.length === POSTS_PER_PAGE);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch posts');
-      setHasMore(false);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [agent, tag, cursor, members, community, includeAll]);
-
-  useEffect(() => {
-    if (!tag || !agent) return;
-    setPosts([]);
-    setCursor(undefined);
-    setHasMore(true);
-    loadPosts(true); // Initial load
-  }, [tag, agent]);
-
-  const handleLoadMore = () => {
-    loadPosts(false);
-  };
-
   const handlePostClick = (post: CommunityPost) => {
-    const postId = post.post.uri.split('/').pop();
+    const { rkey: postId } = parseAtUri(post.post.uri);
     const authorHandle = post.post.author.handle;
-    navigate(`/thread/${authorHandle}/${postId}`);
+    navigate(createPath('thread', { handle: authorHandle, postId }));
   };
 
   if (!tag) {
@@ -166,24 +69,24 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
             <div className="flex items-center gap-4 mb-2">
               {community ? (
                 <>
-                <h1 className="text-4xl font-bold">{community.name}</h1>
-                <h1 className="text-2xl">#{tag}</h1>
+                  <h1 className="text-4xl font-bold">{community.name}</h1>
+                  <h1 className="text-2xl">#{tag}</h1>
                 </>
-              ) : (
+              ) : !isCommunityLoading && (
                 <>
-                <h1 className="text-4xl font-bold">#{tag}</h1>
-                <Button
-                  onClick={() => navigate(`/community/new?tag=${tag.replace(/^#/, '')}`)}
-                  variant="outline"
-                >
-                Claim this community
-              </Button>
-              </>
+                  <h1 className="text-4xl font-bold">#{tag}</h1>
+                  <Button
+                    onClick={() => navigate(`/community/new?tag=${tag.replace(/^#/, '')}`)}
+                    variant="outline"
+                  >
+                    Claim this community
+                  </Button>
+                </>
               )}
               
               {isCommunityLoading && (
                 <div className="h-8 w-32 bg-accent animate-pulse rounded"></div>
-              ) }
+              )}
             </div>
           </div>
           <ThemeToggle />
@@ -206,21 +109,21 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
             </div>
           ))}
 
-          {isLoading && (
+          {isPostsLoading && (
             <div className="animate-pulse space-y-4">
               <div className="h-24 bg-accent rounded-lg"></div>
               <div className="h-24 bg-accent rounded-lg"></div>
             </div>
           )}
 
-          {!isLoading && posts.length === 0 && (
+          {!isPostsLoading && posts.length === 0 && (
             <p className="text-muted-foreground text-center">No posts found for #{tag}</p>
           )}
 
-          {!isLoading && (
+          {!isPostsLoading && (
             hasMore ? (
               <button
-                onClick={handleLoadMore}
+                onClick={loadMore}
                 className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                 aria-label="Load more posts"
               >
