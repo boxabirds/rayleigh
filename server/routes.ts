@@ -1,5 +1,5 @@
 import type { Express } from "express";
-import { createCommunity, getCommunity, getOwnedCommunities } from '../db/communities';
+import { createCommunity, getCommunity, getOwnedCommunities, getCommunityMembers } from '../db/communities';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../db/schema';
@@ -85,6 +85,28 @@ export function registerRoutes(app: Express, testDb?: NodePgDatabase<typeof sche
     } catch (error) {
       console.error('Error getting owned communities:', error);
       res.status(500).json({ error: 'Failed to get owned communities' });
+    }
+  });
+
+  app.get('/api/community/:hashtag/members', async (req, res) => {
+    try {
+      const { hashtag } = req.params;
+      const did = req.headers['x-did'] as string;
+
+      if (!did) {
+        return res.status(401).json({ error: 'DID not provided' });
+      }
+
+      const members = await getCommunityMembers(hashtag, did, testDb);
+      
+      if (members === null) {
+        return res.status(403).json({ error: 'Not authorized to view members or community not found' });
+      }
+
+      res.json({ members });
+    } catch (error) {
+      console.error('Error getting community members:', error);
+      res.status(500).json({ error: 'Failed to get community members' });
     }
   });
 }

@@ -85,4 +85,96 @@ describe('API Routes Integration Tests', () => {
       });
     });
   });
+
+  describe('GET /api/community/:hashtag/members', () => {
+    it('should return members for authorized user', async () => {
+      const db = drizzle(pool, { schema });
+      const ownerDid = agent.session?.did!;
+      const member1Did = 'did:plc:member1';
+      const member2Did = 'did:plc:member2';
+
+      // Create a test community with members
+      await createCommunity({
+        name: 'Test Community',
+        description: 'A test community',
+        rules: 'Be nice',
+        hashtag: 'testcommunity',
+        creatorDid: ownerDid,
+        initialMembers: [
+          { did: member1Did },
+          { did: member2Did }
+        ],
+      }, db);
+
+      // Test cases
+      
+      // 1. Owner should be able to get members
+      const ownerResponse = await request(app)
+        .get('/api/community/testcommunity/members')
+        .set('x-did', ownerDid);
+
+      expect(ownerResponse.status).toBe(200);
+      expect(ownerResponse.body.members).toHaveLength(3);
+      expect(ownerResponse.body.members).toContain(ownerDid);
+      expect(ownerResponse.body.members).toContain(member1Did);
+      expect(ownerResponse.body.members).toContain(member2Did);
+
+      // 2. Member should be able to get members
+      const memberResponse = await request(app)
+        .get('/api/community/testcommunity/members')
+        .set('x-did', member1Did);
+
+      expect(memberResponse.status).toBe(200);
+      expect(memberResponse.body.members).toHaveLength(3);
+      expect(memberResponse.body.members).toContain(ownerDid);
+      expect(memberResponse.body.members).toContain(member1Did);
+      expect(memberResponse.body.members).toContain(member2Did);
+    });
+
+    it('should return 401 when DID is not provided', async () => {
+      const response = await request(app)
+        .get('/api/community/testcommunity/members');
+
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        error: 'DID not provided'
+      });
+    });
+
+    it('should return 403 for non-members', async () => {
+      const db = drizzle(pool, { schema });
+      const ownerDid = agent.session?.did!;
+      const nonMemberDid = 'did:plc:nonmember';
+
+      // Create a test community
+      await createCommunity({
+        name: 'Test Community',
+        description: 'A test community',
+        rules: 'Be nice',
+        hashtag: 'testcommunity',
+        creatorDid: ownerDid,
+        initialMembers: [],
+      }, db);
+
+      const response = await request(app)
+        .get('/api/community/testcommunity/members')
+        .set('x-did', nonMemberDid);
+
+      expect(response.status).toBe(403);
+      expect(response.body).toEqual({
+        error: 'Not authorized to view members or community not found'
+      });
+    });
+
+    it('should return 403 for non-existent community', async () => {
+      const response = await request(app)
+        .get('/api/community/nonexistent/members')
+        .set('x-did', agent.session?.did!);
+
+      expect(response.status).toBe(403);
+      expect(response.body).toEqual({
+        error: 'Not authorized to view members or community not found'
+      });
+    });
+  });
 });
