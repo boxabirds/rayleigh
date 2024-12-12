@@ -11,11 +11,11 @@ import { ThreadPage } from '../pages/ThreadPage';
 
 export default function Router() {
   const [location] = useLocation();
-  console.log('Router: Current location:', location);
-  console.log('Router: Available routes:', Object.entries(routes).map(([name, route]) => ({
-    name,
-    path: route.path
-  })));
+  // console.log('Router: Current location:', location);
+  // console.log('Router: Available routes:', Object.entries(routes).map(([name, route]) => ({
+  //   name,
+  //   path: route.path
+  // })));
 
   return (
     <Switch>
@@ -47,7 +47,7 @@ export default function Router() {
 
       <Route path="/:rest*">
         {(params) => {
-          console.log('Router: Unmatched route with params:', params);
+          // console.log('Router: Unmatched route with params:', params);
           return <div>Not Found</div>;
         }}
       </Route>

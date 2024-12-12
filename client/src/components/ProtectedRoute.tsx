@@ -10,16 +10,16 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, path }: ProtectedRouteProps) {
   useRequireAuth();
   const [location] = useLocation();
-  console.log('ProtectedRoute:', {
-    path,
-    location,
-    matches: matchPath(path, location)
-  });
+  // console.log('ProtectedRoute:', {
+  //   path,
+  //   location,
+  //   matches: matchPath(path, location)
+  // });
   
   return (
     <Route path={path}>
       {(params) => {
-        console.log('ProtectedRoute matched with params:', params);
+        // console.log('ProtectedRoute matched with params:', params);
         return children;
       }}
     </Route>
