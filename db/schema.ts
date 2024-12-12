@@ -26,5 +26,5 @@ export const communityMembers = pgTable('community_members', {
   role: varchar('role', { length: 20 }).notNull(), // 'owner', 'admin', 'member'
   joinedAt: timestamp('joined_at').defaultNow().notNull(),
 }, (table) => ({
-  //memberDidIdx: index('idx_community_members_member_did').on(table.memberDid)
+  memberDidIdx: index('idx_community_members_member_did').on(table.memberDid)
 }));
