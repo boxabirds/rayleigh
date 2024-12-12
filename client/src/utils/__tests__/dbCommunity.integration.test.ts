@@ -3,7 +3,7 @@ import { BskyAgent } from '@atproto/api';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '../../../../db/schema';
-import { createCommunity, getOwnedCommunities, deleteCommunity } from '../../../../db/communities';
+import { createCommunity, getOwnedCommunities, deleteCommunity, getCommunityMembers } from '../../../../db/communities';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs/promises';
@@ -153,5 +153,52 @@ describe('Community Integration Tests', () => {
     const nonExistentId = '00000000-0000-0000-0000-000000000000';
     const result = await deleteCommunity(nonExistentId, db);
     expect(result).toBeUndefined();
+  });
+
+  it('should get community members correctly', async () => {
+    const db = drizzle(pool, { schema });
+    const ownerDid = agent.session?.did!;
+    const member1Did = 'did:plc:member1';
+    const member2Did = 'did:plc:member2';
+    const nonMemberDid = 'did:plc:nonmember';
+
+    // Create a community with initial members
+    const community = await createCommunity({
+      name: 'Test Community',
+      description: 'A test community',
+      rules: 'Be nice',
+      creatorDid: ownerDid,
+      hashtag: 'testcommunity',
+      initialMembers: [
+        { did: member1Did },
+        { did: member2Did }
+      ],
+    }, db);
+
+    // Test cases
+    
+    // 1. Owner should be able to get members
+    const membersForOwner = await getCommunityMembers('testcommunity', ownerDid, db);
+    expect(membersForOwner).not.toBeNull();
+    expect(membersForOwner).toHaveLength(3); // owner + 2 members
+    expect(membersForOwner).toContain(ownerDid);
+    expect(membersForOwner).toContain(member1Did);
+    expect(membersForOwner).toContain(member2Did);
+
+    // 2. Member should be able to get members
+    const membersForMember = await getCommunityMembers('testcommunity', member1Did, db);
+    expect(membersForMember).not.toBeNull();
+    expect(membersForMember).toHaveLength(3);
+    expect(membersForMember).toContain(ownerDid);
+    expect(membersForMember).toContain(member1Did);
+    expect(membersForMember).toContain(member2Did);
+
+    // 3. Non-member should not be able to get members
+    const membersForNonMember = await getCommunityMembers('testcommunity', nonMemberDid, db);
+    expect(membersForNonMember).toBeNull();
+
+    // 4. Non-existent community should return null
+    const membersForNonExistentCommunity = await getCommunityMembers('nonexistent', ownerDid, db);
+    expect(membersForNonExistentCommunity).toBeNull();
   });
 });
