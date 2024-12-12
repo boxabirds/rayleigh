@@ -69,7 +69,7 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
 
   useEffect(() => {
     async function fetchMembers() {
-      if (!tag || !agent?.session?.did) return;
+      if (!tag || !agent?.session?.did || !community) return;
       
       setIsMembersLoading(true);
       try {
@@ -95,7 +95,7 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     }
 
     fetchMembers();
-  }, [tag, agent?.session?.did]);
+  }, [tag, agent?.session?.did, community]);
 
   const loadInitialPosts = useCallback(async () => {
     if (!agent || isLoading || !tag) return;
@@ -106,13 +106,16 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
       const params = new URLSearchParams(window.location.search);
       const includeAll = params.get('scope') === 'all';
       
+      // Only filter by members if there's a community
+      const memberFilter = community ? members : undefined;
+      
       const result = await getParentPosts(
         agent, 
         tag, 
         undefined, 
         POSTS_PER_PAGE,
         'recent',
-        members,
+        memberFilter,
         includeAll
       );
       setPosts(result.posts);
@@ -125,7 +128,7 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [agent, tag, members]);
+  }, [agent, tag, members, community]);
 
   const loadMorePosts = useCallback(async () => {
     if (!agent || isLoading || !tag || !cursor) return;
@@ -136,13 +139,16 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
       const params = new URLSearchParams(window.location.search);
       const includeAll = params.get('scope') === 'all';
       
+      // Only filter by members if there's a community
+      const memberFilter = community ? members : undefined;
+      
       const result = await getParentPosts(
         agent, 
         tag, 
         cursor, 
         POSTS_PER_PAGE,
         'recent',
-        members,
+        memberFilter,
         includeAll
       );
       setPosts(prev => [...prev, ...result.posts]);
@@ -155,7 +161,7 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [agent, tag, cursor, members]);
+  }, [agent, tag, cursor, members, community]);
 
   useEffect(() => {
     if (!tag || !agent) return;
