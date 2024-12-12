@@ -69,7 +69,9 @@ export async function getParentPosts(
   tag: string,
   cursor?: string,
   maxPosts: number = 10,
-  sortOrder: SortOrder = 'recent'
+  sortOrder: SortOrder = 'recent',
+  memberFilter?: Set<string>,
+  includeAll: boolean = false
 ): Promise<GetParentPostsResult> {
   const allParentPosts: CommunityPost[] = [];
   let currentCursor = cursor;
@@ -99,7 +101,16 @@ export async function getParentPosts(
 
         // Must have the community tag
         const postText = record.text.toLowerCase();
-        return postText.includes(`#${tag.toLowerCase()}`);
+        const hasTag = postText.includes(`#${tag.toLowerCase()}`);
+        if (!hasTag) return false;
+
+        // If we're not including all posts and we have a member filter,
+        // check if the post author is a member
+        if (!includeAll && memberFilter && !memberFilter.has(post.author.did)) {
+          return false;
+        }
+
+        return true;
       })
       .map(post => ({
         post,

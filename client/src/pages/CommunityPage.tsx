@@ -20,6 +20,8 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [community, setCommunity] = useState<Community | null>(null);
   const [isCommunityLoading, setIsCommunityLoading] = useState(true);
+  const [members, setMembers] = useState<Set<string>>(new Set());
+  const [isMembersLoading, setIsMembersLoading] = useState(true);
   const POSTS_PER_PAGE = 10;
   const agent = useAgent();
   const { toast } = useToast();
@@ -65,12 +67,54 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     fetchCommunity();
   }, [tag]);
 
+  useEffect(() => {
+    async function fetchMembers() {
+      if (!tag || !agent?.session?.did) return;
+      
+      setIsMembersLoading(true);
+      try {
+        const cleanTag = tag.replace(/^#/, '');
+        const response = await fetch(`/api/community/${cleanTag}/members`, {
+          headers: {
+            'x-did': agent.session.did
+          }
+        });
+        
+        if (response.ok) {
+          const { members: membersList } = await response.json();
+          setMembers(new Set(membersList));
+        } else {
+          setMembers(new Set());
+        }
+      } catch (err) {
+        console.error('Error fetching members:', err);
+        setMembers(new Set());
+      } finally {
+        setIsMembersLoading(false);
+      }
+    }
+
+    fetchMembers();
+  }, [tag, agent?.session?.did]);
+
   const loadInitialPosts = useCallback(async () => {
     if (!agent || isLoading || !tag) return;
     
     setIsLoading(true);
     try {
-      const result = await getParentPosts(agent, tag, undefined, POSTS_PER_PAGE);
+      // Check URL parameters for scope
+      const params = new URLSearchParams(window.location.search);
+      const includeAll = params.get('scope') === 'all';
+      
+      const result = await getParentPosts(
+        agent, 
+        tag, 
+        undefined, 
+        POSTS_PER_PAGE,
+        'recent',
+        members,
+        includeAll
+      );
       setPosts(result.posts);
       setCursor(result.cursor);
       setHasMore(result.posts.length === POSTS_PER_PAGE);
@@ -81,14 +125,26 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [agent, tag]);
+  }, [agent, tag, members]);
 
   const loadMorePosts = useCallback(async () => {
     if (!agent || isLoading || !tag || !cursor) return;
     
     setIsLoading(true);
     try {
-      const result = await getParentPosts(agent, tag, cursor, POSTS_PER_PAGE);
+      // Check URL parameters for scope
+      const params = new URLSearchParams(window.location.search);
+      const includeAll = params.get('scope') === 'all';
+      
+      const result = await getParentPosts(
+        agent, 
+        tag, 
+        cursor, 
+        POSTS_PER_PAGE,
+        'recent',
+        members,
+        includeAll
+      );
       setPosts(prev => [...prev, ...result.posts]);
       setCursor(result.cursor);
       setHasMore(result.posts.length === POSTS_PER_PAGE);
@@ -99,7 +155,7 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [agent, tag, cursor]);
+  }, [agent, tag, cursor, members]);
 
   useEffect(() => {
     if (!tag || !agent) return;
