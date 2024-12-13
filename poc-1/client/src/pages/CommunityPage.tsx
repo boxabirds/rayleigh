@@ -55,7 +55,7 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">No community specified</h1>
-          <p className="text-muted-foreground">Please select a community to view</p>
+          <p className="text-muted-foreground">Please select a community to view.</p>
         </div>
       </div>
     );
@@ -120,7 +120,7 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
             <p className="text-muted-foreground text-center">No posts found for #{tag}</p>
           )}
 
-          {!isPostsLoading && (
+          {!isPostsLoading && posts.length > 0 && (
             hasMore ? (
               <button
                 onClick={loadMore}
@@ -129,7 +129,7 @@ export default function CommunityPage({ tag }: CommunityPageProps) {
               >
                 More
               </button>
-            ) : posts.length > 0 && (
+            ) : (
               <p className="text-center text-muted-foreground italic mt-8">
                 No more posts
               </p>

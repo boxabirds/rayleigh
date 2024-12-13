@@ -68,7 +68,7 @@ export async function getParentPosts(
   agent: BskyAgent,
   tag: string,
   cursor?: string,
-  maxPosts: number = 10,
+  maxPosts: number = 100,
   sortOrder: SortOrder = 'recent',
   memberFilter?: Set<string>,
   includeAll: boolean = false
