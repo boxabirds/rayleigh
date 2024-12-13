@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAgent } from '../contexts/agent';
-import { 
-  Community, 
-  CommunityPost, 
-  getParentPosts 
-} from '../utils/communityUtils';
+import { Community, CommunityPost, getParentPosts } from '../utils/communityUtils';
 
 interface UseParentPostsResult {
   posts: CommunityPost[];
@@ -12,7 +8,6 @@ interface UseParentPostsResult {
   hasMore: boolean;
   error: string | null;
   loadMore: () => Promise<void>;
-  refresh: () => Promise<void>;
 }
 
 export const POSTS_PER_PAGE = 10;
@@ -24,7 +19,7 @@ export function useParentPosts(
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [members, setMembers] = useState<Set<string>>(new Set());
   const [cursor, setCursor] = useState<string | undefined>();
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const agent = useAgent();
@@ -50,6 +45,13 @@ export function useParentPosts(
     fetchMembers();
   }, [tag, agent?.session?.did, community]);
 
+  // Load initial posts when dependencies change
+  useEffect(() => {
+    if (agent && tag) {
+      loadPosts(true);
+    }
+  }, [tag, agent, members]);
+
   const loadPosts = useCallback(async (isInitialLoad = false) => {
     if (!agent || isLoading || !tag) return;
     if (!isInitialLoad && !cursor) return;
@@ -69,6 +71,10 @@ export function useParentPosts(
         memberFilter,
         includeAll
       );
+      
+      // Log the number of fetched posts
+      console.log(`Fetched ${result.posts.length} posts`);
+
       setPosts(prev => isInitialLoad ? result.posts : [...prev, ...result.posts]);
       setCursor(result.cursor);
       setHasMore(result.posts.length === POSTS_PER_PAGE);
@@ -86,7 +92,6 @@ export function useParentPosts(
     isLoading,
     hasMore,
     error,
-    loadMore: () => loadPosts(false),
-    refresh: () => loadPosts(true)
+    loadMore: () => loadPosts(false)
   };
 }
