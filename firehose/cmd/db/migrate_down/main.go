@@ -5,12 +5,16 @@ import (
 	"os"
 
 	"firehose/pkg/db/migration"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err := loadEnv(); err != nil {
+	if err := migration.LoadEnv(); err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
+	}
+
+	// Check if sqlc is installed
+	if ok, instruction := migration.CheckSQLC(); !ok {
+		log.Fatalf("sqlc not found: %s", instruction)
 	}
 
 	// Use connection string from environment
@@ -20,8 +24,7 @@ func main() {
 	if err := migration.MigrateDown(connectionString, migrationsPath); err != nil {
 		log.Fatalf("Migration failed: %v", err)
 	}
-}
 
-func loadEnv() error {
-	return godotenv.Load()
+	// Generate SQLC bindings
+	migration.GenerateSQLC()
 }

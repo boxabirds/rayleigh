@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"firehose/pkg/db/generate"
 	"firehose/pkg/db/migration"
 	"fmt"
 	"io"
@@ -15,9 +16,13 @@ import (
 )
 
 func main() {
-	// Load environment variables
-	if err := loadEnv(); err != nil {
+	if err := godotenv.Load(); err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
+	}
+
+	// Check if sqlc is installed
+	if ok, instruction := generate.CheckSQLC(); !ok {
+		log.Fatalf("sqlc not found: %s", instruction)
 	}
 
 	// Set up PostgreSQL URL
@@ -46,14 +51,6 @@ func main() {
 	if err := migration.MigrateUp(postgresURL, "file://db/migrations"); err != nil {
 		log.Fatalf("Migration failed: %v", err)
 	}
-}
-
-func loadEnv() error {
-	// Load environment variables from .env file
-	if err := godotenv.Load(); err != nil {
-		return fmt.Errorf("Error loading .env file: %w", err)
-	}
-	return nil
 }
 
 func encodePassword(password string) string {
