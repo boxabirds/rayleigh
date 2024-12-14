@@ -5,14 +5,21 @@ import (
 	"fmt"
 	"log"
 
+	"firehose/pkg/db/generate"
+
 	_ "github.com/lib/pq"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/file"
 )
 
-// MigrateUp applies all up migrations
+// MigrateUp applies all up migrations and generates SQLC bindings
 func MigrateUp(connectionString string, migrationsPath string) error {
+	// Check if sqlc is installed
+	if ok, instruction := generate.CheckSQLC(); !ok {
+		log.Fatalf("sqlc not found: %s", instruction)
+	}
+
 	// Connect to the database
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
@@ -47,11 +54,19 @@ func MigrateUp(connectionString string, migrationsPath string) error {
 		log.Println("Migrations applied successfully.")
 	}
 
+	// Generate SQLC bindings
+	generate.GenerateSQLC()
+
 	return nil
 }
 
-// MigrateDown rolls back the last migration
+// MigrateDown rolls back the last migration and generates SQLC bindings
 func MigrateDown(connectionString string, migrationsPath string) error {
+	// Check if sqlc is installed
+	if ok, instruction := generate.CheckSQLC(); !ok {
+		log.Fatalf("sqlc not found: %s", instruction)
+	}
+
 	// Connect to the database
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
@@ -81,5 +96,9 @@ func MigrateDown(connectionString string, migrationsPath string) error {
 	}
 
 	log.Println("Migration rolled back successfully.")
+
+	// Generate SQLC bindings
+	generate.GenerateSQLC()
+
 	return nil
 }

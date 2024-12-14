@@ -1,0 +1,9 @@
+version: "2"
+sql:
+  - schema: "migrations/"
+    queries: "queries/"
+    engine: "postgresql"
+    gen:
+      go:
+        package: "db"
+        out: "../pkg/db/query"
