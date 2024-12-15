@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"firehose/pkg/db"
+	dbutils "firehose/pkg/db"
 	"firehose/pkg/db/query"
 
 	_ "github.com/lib/pq"
@@ -26,7 +26,7 @@ func main() {
 	jsonFilePath := os.Args[1]
 
 	// Get database connection string
-	connStr := db.GetPostgresURL()
+	connStr := dbutils.GetPostgresURL()
 
 	// Open the JSON file
 	file, err := os.Open(jsonFilePath)
@@ -103,8 +103,8 @@ func main() {
 			continue
 		}
 
-		// Extract tags from the data field
-		tags := extractTags(post.Data)
+		// Extract tags using the utility function from db package
+		tags := dbutils.ExtractTags(post.Data)
 
 		log.Printf("Tags extracted: %v", tags)
 
@@ -123,42 +123,4 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("Error reading file: %v", err)
 	}
-}
-
-// extractTags extracts tags from the data field
-func extractTags(data pqtype.NullRawMessage) []string {
-	var tags []string
-
-	// Check if data is valid before unmarshalling
-	if !data.Valid {
-		return tags
-	}
-
-	// Unmarshal the data field into a map
-	var dataMap map[string]interface{}
-	if err := json.Unmarshal(data.RawMessage, &dataMap); err != nil {
-		log.Printf("Failed to unmarshal data field: %v", err)
-		return tags
-	}
-
-	// Extract tags from facets
-	if facets, ok := dataMap["facets"].([]interface{}); ok {
-		for _, facet := range facets {
-			if f, ok := facet.(map[string]interface{}); ok {
-				if features, ok := f["features"].([]interface{}); ok {
-					for _, feature := range features {
-						if feat, ok := feature.(map[string]interface{}); ok {
-							if featType, ok := feat["$type"].(string); ok && featType == "app.bsky.richtext.facet#tag" {
-								if tag, ok := feat["tag"].(string); ok {
-									tags = append(tags, tag)
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return tags
 }

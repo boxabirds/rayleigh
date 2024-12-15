@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/url"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/sqlc-dev/pqtype"
 )
 
 // GetPostgresURL loads environment variables and constructs a PostgreSQL connection URL
@@ -102,4 +104,42 @@ func CreateDatabase() bool {
 
 	log.Printf("Database %s created successfully.", os.Getenv("DB_NAME"))
 	return true
+}
+
+// ExtractTags extracts tags from the data field
+func ExtractTags(data pqtype.NullRawMessage) []string {
+	var tags []string
+
+	// Check if data is valid before unmarshalling
+	if !data.Valid {
+		return tags
+	}
+
+	// Unmarshal the data field into a map
+	var dataMap map[string]interface{}
+	if err := json.Unmarshal(data.RawMessage, &dataMap); err != nil {
+		log.Printf("Failed to unmarshal data field: %v", err)
+		return tags
+	}
+
+	// Extract tags from facets
+	if facets, ok := dataMap["facets"].([]interface{}); ok {
+		for _, facet := range facets {
+			if f, ok := facet.(map[string]interface{}); ok {
+				if features, ok := f["features"].([]interface{}); ok {
+					for _, feature := range features {
+						if feat, ok := feature.(map[string]interface{}); ok {
+							if featType, ok := feat["$type"].(string); ok && featType == "app.bsky.richtext.facet#tag" {
+								if tag, ok := feat["tag"].(string); ok {
+									tags = append(tags, tag)
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return tags
 }
