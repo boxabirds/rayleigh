@@ -1,5 +1,10 @@
 
 -- name: GetRecentPostsByTags :many
+-- params: named
+-- $1: TagNames
+-- $2: Before
+-- $3: Limit
+-- $4: Offset
 SELECT DISTINCT p.id, p.created_at, t.name AS tag_name
 FROM posts p
 JOIN post_tags pt ON p.id = pt.post_id
