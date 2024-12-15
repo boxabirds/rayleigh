@@ -3,75 +3,108 @@
 //   sqlc v1.27.0
 // source: queries.sql
 
-package db
+package query
 
 import (
 	"context"
-	"database/sql"
+	"time"
 
 	"github.com/lib/pq"
+	"github.com/sqlc-dev/pqtype"
 )
 
-const getPostByID = `-- name: GetPostByID :one
-SELECT p.id, p.created_at, COALESCE(JSON_AGG(t.name ORDER BY t.name), '[]'::json) AS tags
-FROM posts p
-LEFT JOIN post_tags pt ON p.id = pt.post_id
-LEFT JOIN tags t ON pt.tag_id = t.id
-WHERE p.id = $1
-GROUP BY p.id
+const createPostWithTags = `-- name: CreatePostWithTags :exec
+WITH new_post AS (
+    INSERT INTO posts (creator_did, created_at, text, data)
+    VALUES ($1, $2, $3, $4)
+    RETURNING id
+)
+INSERT INTO post_tags (post_id, tag_id)
+SELECT new_post.id, tags.id
+FROM unnest($5::text[]) AS tag_names
+JOIN tags ON tags.name = tag_names
+JOIN new_post ON true
 `
 
-type GetPostByIDRow struct {
-	ID        int32
-	CreatedAt sql.NullTime
-	Tags      interface{}
+type CreatePostWithTagsParams struct {
+	CreatorDid string
+	CreatedAt  time.Time
+	Text       string
+	Data       pqtype.NullRawMessage
+	Tags       []string
 }
 
-func (q *Queries) GetPostByID(ctx context.Context, id int32) (GetPostByIDRow, error) {
-	row := q.db.QueryRowContext(ctx, getPostByID, id)
-	var i GetPostByIDRow
-	err := row.Scan(&i.ID, &i.CreatedAt, &i.Tags)
+// $5: tags
+func (q *Queries) CreatePostWithTags(ctx context.Context, arg CreatePostWithTagsParams) error {
+	_, err := q.db.ExecContext(ctx, createPostWithTags,
+		arg.CreatorDid,
+		arg.CreatedAt,
+		arg.Text,
+		arg.Data,
+		pq.Array(arg.Tags),
+	)
+	return err
+}
+
+const getPostById = `-- name: GetPostById :one
+SELECT id, post_id, creator_did, created_at, text, data FROM posts WHERE id = $1
+`
+
+func (q *Queries) GetPostById(ctx context.Context, id int32) (Post, error) {
+	row := q.db.QueryRowContext(ctx, getPostById, id)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.PostID,
+		&i.CreatorDid,
+		&i.CreatedAt,
+		&i.Text,
+		&i.Data,
+	)
 	return i, err
 }
 
-const getRecentPostsByTag = `-- name: GetRecentPostsByTag :many
-SELECT p.id, p.created_at, t.name AS tag_name
+const getRecentPostsByTagAndCreator = `-- name: GetRecentPostsByTagAndCreator :many
+SELECT p.id, p.post_id, p.creator_did, p.created_at, p.text, p.data
 FROM posts p
 JOIN post_tags pt ON p.id = pt.post_id
 JOIN tags t ON pt.tag_id = t.id
-WHERE t.name = $1 AND p.created_at < $2
+WHERE t.name = ANY($1::text[])
+  AND p.created_at >= $2
+  AND p.creator_did = ANY($3::text[])
 ORDER BY p.created_at DESC
-LIMIT $3 OFFSET $4
+LIMIT $4
 `
 
-type GetRecentPostsByTagParams struct {
-	Name      string
-	CreatedAt sql.NullTime
+type GetRecentPostsByTagAndCreatorParams struct {
+	Column1   []string
+	CreatedAt time.Time
+	Column3   []string
 	Limit     int32
-	Offset    int32
 }
 
-type GetRecentPostsByTagRow struct {
-	ID        int32
-	CreatedAt sql.NullTime
-	TagName   string
-}
-
-func (q *Queries) GetRecentPostsByTag(ctx context.Context, arg GetRecentPostsByTagParams) ([]GetRecentPostsByTagRow, error) {
-	rows, err := q.db.QueryContext(ctx, getRecentPostsByTag,
-		arg.Name,
+func (q *Queries) GetRecentPostsByTagAndCreator(ctx context.Context, arg GetRecentPostsByTagAndCreatorParams) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, getRecentPostsByTagAndCreator,
+		pq.Array(arg.Column1),
 		arg.CreatedAt,
+		pq.Array(arg.Column3),
 		arg.Limit,
-		arg.Offset,
 	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetRecentPostsByTagRow
+	var items []Post
 	for rows.Next() {
-		var i GetRecentPostsByTagRow
-		if err := rows.Scan(&i.ID, &i.CreatedAt, &i.TagName); err != nil {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.PostID,
+			&i.CreatorDid,
+			&i.CreatedAt,
+			&i.Text,
+			&i.Data,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -97,14 +130,14 @@ LIMIT $3 OFFSET $4
 
 type GetRecentPostsByTagsParams struct {
 	Column1   []string
-	CreatedAt sql.NullTime
+	CreatedAt time.Time
 	Limit     int32
 	Offset    int32
 }
 
 type GetRecentPostsByTagsRow struct {
 	ID        int32
-	CreatedAt sql.NullTime
+	CreatedAt time.Time
 	TagName   string
 }
 

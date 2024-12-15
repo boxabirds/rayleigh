@@ -1,0 +1,16 @@
+sqlite> select * from posts limit 1;
+1|did:plc:uei2oc33f4zfqwwm5y4mjk7k|3ld6mrbnf5s2e|ESTAMOS AO VIVO para jogar um clássico nunca antes jogado pela streamer (sim, sabemos que isso é uma falha na nossa formação, mas vamos corrigir hoje!)
+🎄✨☀️O povo pediu, a streamer vai aprender a jogar! ☀️✨🎄
+www.twitch.tv/ponzuzuju|2024-12-13 10:56:23.035+00:00|{"$type":"app.bsky.feed.post","createdAt":"2024-12-13T10:56:23.035Z","embed":{"$type":"app.bsky.embed.external","external":{"description":"🎄✨☀️O povo pediu, a streamer vai aprender a jogar! ☀️✨🎄❗redes ❗pix ❗comandos❗umapenca","thumb":{"$type":"blob","ref":{"$link":"bafkreifdxtbtobtiknwz3pichymytqyo3fe2qlubwhho3qbi6qfs46brby"},"mimeType":"image/jpeg","size":285165},"title":"PonzuzuJu - Twitch","uri":"https://www.twitch.tv/ponzuzuju"}},"facets":[{"features":[{"$type":"app.bsky.richtext.facet#link","uri":"https://www.twitch.tv/ponzuzuju"}],"index":{"byteEnd":253,"byteStart":230}}],"langs":["pt"],"text":"ESTAMOS AO VIVO para jogar um clássico nunca antes jogado pela streamer (sim, sabemos que isso é uma falha na nossa formação, mas vamos corrigir hoje!)\n🎄✨☀️O povo pediu, a streamer vai aprender a jogar! ☀️✨🎄\nwww.twitch.tv/ponzuzuju"}
+sqlite> .schema posts
+CREATE TABLE posts (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		did TEXT NOT NULL,
+		post_id TEXT NOT NULL,
+		text TEXT NOT NULL,
+		created_at DATETIME NOT NULL,
+		data JSON,
+		UNIQUE(did, post_id)
+	);
+CREATE INDEX idx_posts_created_at ON posts(created_at);
+CREATE INDEX idx_posts_did_post ON posts(did, post_id);

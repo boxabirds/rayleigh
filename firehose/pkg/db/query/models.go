@@ -2,22 +2,27 @@
 // versions:
 //   sqlc v1.27.0
 
-package db
+package query
 
 import (
-	"database/sql"
+	"time"
+
+	"github.com/sqlc-dev/pqtype"
 )
 
 type Post struct {
-	ID        int32
-	Title     string
-	Content   string
-	CreatedAt sql.NullTime
+	ID         int32
+	PostID     string
+	CreatorDid string
+	CreatedAt  time.Time
+	Text       string
+	Data       pqtype.NullRawMessage
 }
 
 type PostTag struct {
-	PostID int32
-	TagID  int32
+	PostID    int32
+	TagID     int32
+	CreatedAt time.Time
 }
 
 type Tag struct {

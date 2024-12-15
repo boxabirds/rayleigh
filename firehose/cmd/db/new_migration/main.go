@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	if err := loadEnv(); err != nil {
+	if err := godotenv.Load(); err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
@@ -33,10 +33,6 @@ func main() {
 
 	createMigrationFiles(migrationName)
 	fmt.Printf("Migration '%s' created successfully.\n", migrationName)
-}
-
-func loadEnv() error {
-	return godotenv.Load()
 }
 
 func findEmptyMigrationFile() (string, error) {

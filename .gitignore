@@ -9,3 +9,5 @@ vite.config.ts.*
 .env.local
 .env.*
 playwright-report/**
+
+firehose/db/test/data/samples/large/**
