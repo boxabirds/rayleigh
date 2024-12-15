@@ -157,6 +157,11 @@ type GetRecentPostsByTagsRow struct {
 	TagName   string
 }
 
+// params: named
+// $1: TagNames
+// $2: Before
+// $3: Limit
+// $4: Offset
 func (q *Queries) GetRecentPostsByTags(ctx context.Context, arg GetRecentPostsByTagsParams) ([]GetRecentPostsByTagsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getRecentPostsByTags,
 		pq.Array(arg.Column1),
