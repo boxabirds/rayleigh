@@ -55,6 +55,7 @@ func GetPostgresURL() string {
 	)
 
 	// Set the environment variable for other parts of the application
+	// TODO evaluate if this is needed still needed
 	os.Setenv("POSTGRESQL_URL", postgresURL)
 
 	return postgresURL
@@ -121,6 +122,7 @@ func ExtractTags(data pqtype.NullRawMessage) []string {
 		log.Printf("Failed to unmarshal data field: %v", err)
 		return tags
 	}
+	log.Println(dataMap)
 
 	// Extract tags from facets
 	if facets, ok := dataMap["facets"].([]interface{}); ok {
