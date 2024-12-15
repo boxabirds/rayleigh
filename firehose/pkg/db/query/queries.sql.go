@@ -15,18 +15,33 @@ import (
 
 const createPostWithTags = `-- name: CreatePostWithTags :exec
 WITH new_post AS (
-    INSERT INTO posts (creator_did, created_at, text, data)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO posts (post_id, creator_did, created_at, text, data)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING id
+),
+inserted_tags AS (
+    INSERT INTO tags (name)
+    SELECT unnest($6::text[])
+    ON CONFLICT (name) DO NOTHING
+    RETURNING id, name
+),
+existing_tags AS (
+    SELECT id, name
+    FROM tags
+    WHERE name = ANY($6::text[])
 )
 INSERT INTO post_tags (post_id, tag_id)
-SELECT new_post.id, tags.id
-FROM unnest($5::text[]) AS tag_names
-JOIN tags ON tags.name = tag_names
+SELECT new_post.id, tag_id
+FROM (
+    SELECT id AS tag_id FROM inserted_tags
+    UNION
+    SELECT id AS tag_id FROM existing_tags
+) AS all_tags
 JOIN new_post ON true
 `
 
 type CreatePostWithTagsParams struct {
+	PostID     string
 	CreatorDid string
 	CreatedAt  time.Time
 	Text       string
@@ -34,9 +49,10 @@ type CreatePostWithTagsParams struct {
 	Tags       []string
 }
 
-// $5: tags
+// $6: tags
 func (q *Queries) CreatePostWithTags(ctx context.Context, arg CreatePostWithTagsParams) error {
 	_, err := q.db.ExecContext(ctx, createPostWithTags,
+		arg.PostID,
 		arg.CreatorDid,
 		arg.CreatedAt,
 		arg.Text,
