@@ -23,14 +23,28 @@ LIMIT $4;
 SELECT * FROM posts WHERE id = $1;
 
 -- name: CreatePostWithTags :exec
--- $5: tags
+-- $6: tags
 WITH new_post AS (
-    INSERT INTO posts (creator_did, created_at, text, data)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO posts (post_id, creator_did, created_at, text, data)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING id
+),
+inserted_tags AS (
+    INSERT INTO tags (name)
+    SELECT unnest(sqlc.arg('tags')::text[])
+    ON CONFLICT (name) DO NOTHING
+    RETURNING id, name
+),
+existing_tags AS (
+    SELECT id, name
+    FROM tags
+    WHERE name = ANY(sqlc.arg('tags')::text[])
 )
 INSERT INTO post_tags (post_id, tag_id)
-SELECT new_post.id, tags.id
-FROM unnest(sqlc.arg('tags')::text[]) AS tag_names
-JOIN tags ON tags.name = tag_names
+SELECT new_post.id, tag_id
+FROM (
+    SELECT id AS tag_id FROM inserted_tags
+    UNION
+    SELECT id AS tag_id FROM existing_tags
+) AS all_tags
 JOIN new_post ON true;

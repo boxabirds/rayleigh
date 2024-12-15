@@ -2,8 +2,8 @@ package main
 
 import (
 	"log"
-	"os"
 
+	"firehose/pkg/db"
 	"firehose/pkg/db/generate"
 	"firehose/pkg/db/migration"
 
@@ -20,7 +20,7 @@ func main() {
 	}
 
 	// Use connection string from environment
-	connectionString := os.Getenv("POSTGRESQL_URL")
+	connectionString := db.GetPostgresURL()
 	migrationsPath := "file://db/migrations"
 
 	if err := migration.MigrateUp(connectionString, migrationsPath); err != nil {

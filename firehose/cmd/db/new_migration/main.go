@@ -6,15 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
-
 	if len(os.Args) < 2 {
 		log.Fatal("Error: No migration name provided. Usage: ./new_migration <migration_name>")
 	}

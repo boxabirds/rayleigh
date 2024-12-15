@@ -1,13 +1,12 @@
 package main
 
 import (
-	"database/sql"
+	"firehose/pkg/db"
 	"firehose/pkg/db/generate"
 	"firehose/pkg/db/migration"
 	"fmt"
 	"io"
 	"log"
-	"net/url"
 	"os"
 	"path/filepath"
 
@@ -16,90 +15,36 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
-
 	// Check if sqlc is installed
 	if ok, instruction := generate.CheckSQLC(); !ok {
 		log.Fatalf("sqlc not found: %s", instruction)
 	}
 
-	// Set up PostgreSQL URL
-	encodedPassword := encodePassword(os.Getenv("DB_PASSWORD"))
-	postgresURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=public",
-		os.Getenv("DB_USER"), encodedPassword, os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
-	os.Setenv("POSTGRESQL_URL", postgresURL)
-	fmt.Println("PostgreSQL URL:", postgresURL)
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+
+	connStr := db.GetPostgresURL()
 
 	// Check if the database exists
-	if dbExists() {
-		fmt.Println("Database exists.")
-	} else {
+	if !db.DatabaseExists(connStr) {
 		fmt.Println("Database does not exist.")
-		if createDatabase() {
+		if db.CreateDatabase() {
 			fmt.Println("Database created successfully.")
 			if !createInitialMigration() {
 				log.Println("Failed to create initial migration files.")
 			}
 		} else {
-			fmt.Println("Failed to create database.")
+			log.Fatal("Failed to create database.")
 		}
+	} else {
+		fmt.Println("Database exists.")
 	}
 
 	// Run migrations
-	if err := migration.MigrateUp(postgresURL, "file://db/migrations"); err != nil {
+	if err := migration.MigrateUp(connStr, "file://db/migrations"); err != nil {
 		log.Fatalf("Migration failed: %v", err)
 	}
-}
-
-func encodePassword(password string) string {
-	return url.QueryEscape(password)
-}
-
-func dbExists() bool {
-	connectionString := os.Getenv("POSTGRESQL_URL")
-	if connectionString == "" {
-		log.Println("POSTGRESQL_URL not set")
-		return false
-	}
-
-	db, err := sql.Open("postgres", connectionString)
-	if err != nil {
-		log.Printf("Failed to connect to database: %v", err)
-		return false
-	}
-	defer db.Close()
-
-	var exists bool
-	err = db.QueryRow("SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", os.Getenv("DB_NAME")).Scan(&exists)
-	if err != nil {
-		log.Printf("Failed to check database existence: %v", err)
-		return false
-	}
-
-	return exists
-}
-
-func createDatabase() bool {
-	adminConnectionString := fmt.Sprintf("postgres://%s:%s@%s:%s/postgres?sslmode=disable",
-		os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_HOST"), os.Getenv("DB_PORT"))
-
-	db, err := sql.Open("postgres", adminConnectionString)
-	if err != nil {
-		log.Printf("Failed to connect to PostgreSQL as admin: %v", err)
-		return false
-	}
-	defer db.Close()
-
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", os.Getenv("DB_NAME")))
-	if err != nil {
-		log.Printf("Failed to create database: %v", err)
-		return false
-	}
-
-	log.Printf("Database %s created successfully.", os.Getenv("DB_NAME"))
-	return true
 }
 
 func createInitialMigration() bool {
