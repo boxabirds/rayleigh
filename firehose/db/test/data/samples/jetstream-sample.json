@@ -1,0 +1,20 @@
+{
+    "did": "did:plc:umdlujsvvpv2rg5ztugglbdr",
+    "time_us": 1734351260798351,
+    "kind": "commit",
+    "commit": {
+        "rev": "3ldgcjgw4bi2y",
+        "operation": "create",
+        "collection": "app.bsky.feed.post",
+        "rkey": "3ldgcjdecq22f",
+        "record": {
+            "$type": "app.bsky.feed.post",
+            "createdAt": "2024-12-16T12:14:16.888Z",
+            "langs": [
+                "pt"
+            ],
+            "text": "julgo meus pais por comprar um monte de coisa aleatoria mas eu sou o maior guerreiro do aliexpress"
+        },
+        "cid": "bafyreic7lm7s63njox37ijzb3oz33fixfslhyg4em7xnjc2fys3y6znkoe"
+    }
+}

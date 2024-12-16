@@ -143,7 +143,13 @@ func ExtractPost(commitRecord []byte) (*query.CreatePostWithTagsParams, error) {
 		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
 	}
 
-	// Convert created_at time
+	// print out the postMap
+	data, err := json.MarshalIndent(postMap, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal postMap: %w", err)
+	}
+	fmt.Printf("PostMap: %s\n", string(data))
+
 	createdAt, err := time.Parse("2006-01-02 15:04:05.999999-07:00", postMap["created_at"].(string))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse created_at: %w", err)

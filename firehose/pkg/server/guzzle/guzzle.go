@@ -3,6 +3,7 @@ package guzzle
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	dbutils "firehose/pkg/db"
 	"firehose/pkg/db/query"
 	"fmt"
@@ -213,6 +214,12 @@ func (g *Guzzle) handleEvent(ctx context.Context, evt *models.Event) error {
 	}
 
 	// print the commit record
+	evtJSON, err := json.Marshal(evt)
+	if err != nil {
+		g.logger.Printf("failed to marshal event: %v", err)
+		return err
+	}
+	g.logger.Printf("Commit: %s", string(evtJSON))
 
 	// extract the tags
 	// data := pqtype.NullRawMessage{Valid: true, RawMessage: evt.Commit.Record}
