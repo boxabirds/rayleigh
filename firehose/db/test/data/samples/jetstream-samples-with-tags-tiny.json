@@ -1,0 +1,186 @@
+{
+    "did": "did:plc:ouz2dpds3g4wmz3g4f7zpmol",
+    "time_us": 1734353822220585,
+    "kind": "commit",
+    "commit": {
+        "rev": "3ldgevqehrt2f",
+        "operation": "create",
+        "collection": "app.bsky.feed.post",
+        "rkey": "3ldgevpyjhk2d",
+        "record": {
+            "$type": "app.bsky.feed.post",
+            "createdAt": "2024-12-16T12:57:00.270Z",
+            "embed": {
+                "$type": "app.bsky.embed.video",
+                "alt": "Dr. Christine Glauning, Dokumentationszentrum NS-Zwangsarbeit:\n„Mein Name ist Christine Glauning, ich bin die Leiterin des Dokumentationszentrums NS-Zwangsarbeit in Berlin-Schöneweide. Wir sind ein Ort der historisch-politischen Bildung, das ist eine unserer Kernaufgaben und sie wird auch immer wichtiger angesichts der Bedrohung unserer Demokratie. Durch die drastischen Sparmaßnahmen werden wir unsere Programmangebote zurückfahren müssen und auch zielgruppenspezifische Programme absagen müssen. Das hat auch Auswirkungen auf die Situation unserer freiberuflichen Guides, die hier sehr engagiert unsere Programme durchführen.“",
+                "aspectRatio": {
+                    "height": 1280,
+                    "width": 720
+                },
+                "video": {
+                    "$type": "blob",
+                    "ref": {
+                        "$link": "bafkreigucw5uzlgctq4poadkt3hmphaknfsfqbyfhkmm7ca55bm7iewxvu"
+                    },
+                    "mimeType": "video/mp4",
+                    "size": 3365443
+                }
+            },
+            "facets": [
+                {
+                    "features": [
+                        {
+                            "$type": "app.bsky.richtext.facet#tag",
+                            "tag": "KürztDieKürzungen"
+                        }
+                    ],
+                    "index": {
+                        "byteEnd": 239,
+                        "byteStart": 219
+                    }
+                }
+            ],
+            "langs": [
+                "de"
+            ],
+            "text": "Kürzungen mit Konsequenzen: Mit dem Rotstift wird an der Vielfalt und Zukunft unserer Kulturlandschaft, unserer Museen, Gedenkstätten wie Ausstellungshäuser und unserer Stadt gekürzt. Deshalb fordern wir gemeinsam: #KürztDieKürzungen! \nUnsere Leiterin Dr. Christine Glauning dazu:"
+        },
+        "cid": "bafyreidcqlbqeoigkyefzcb5x7kyvhtu2es3fjy7hykt7uf6q4tcuvbhbq"
+    }
+}
+{
+    "did": "did:plc:ouz2dpds3g4wmz3g4f7zpmol",
+    "time_us": 1734353822223360,
+    "kind": "commit",
+    "commit": {
+        "rev": "3ldgevqehrt2f",
+        "operation": "create",
+        "collection": "app.bsky.feed.post",
+        "rkey": "3ldgevpyu7c2d",
+        "record": {
+            "$type": "app.bsky.feed.post",
+            "createdAt": "2024-12-16T12:57:00.271Z",
+            "embed": {
+                "$type": "app.bsky.embed.external",
+                "external": {
+                    "description": "Welcome back to Instagram. Sign in to check out what your friends, family \u0026 interests have been capturing \u0026 sharing around the world.",
+                    "title": "Login • Instagram",
+                    "uri": "https://www.instagram.com/berlinermuseumsverband/"
+                }
+            },
+            "facets": [
+                {
+                    "features": [
+                        {
+                            "$type": "app.bsky.richtext.facet#tag",
+                            "tag": "BerlinIstKultur"
+                        }
+                    ],
+                    "index": {
+                        "byteEnd": 55,
+                        "byteStart": 39
+                    }
+                },
+                {
+                    "features": [
+                        {
+                            "$type": "app.bsky.richtext.facet#link",
+                            "uri": "https://www.instagram.com/berlinermuseumsverband/"
+                        }
+                    ],
+                    "index": {
+                        "byteEnd": 206,
+                        "byteStart": 173
+                    }
+                },
+                {
+                    "features": [
+                        {
+                            "$type": "app.bsky.richtext.facet#tag",
+                            "tag": "BerlinIstKultur"
+                        }
+                    ],
+                    "index": {
+                        "byteEnd": 224,
+                        "byteStart": 208
+                    }
+                },
+                {
+                    "features": [
+                        {
+                            "$type": "app.bsky.richtext.facet#tag",
+                            "tag": "KürztDieKürzungen"
+                        }
+                    ],
+                    "index": {
+                        "byteEnd": 245,
+                        "byteStart": 225
+                    }
+                },
+                {
+                    "features": [
+                        {
+                            "$type": "app.bsky.richtext.facet#tag",
+                            "tag": "BerlinIstMuseum"
+                        }
+                    ],
+                    "index": {
+                        "byteEnd": 262,
+                        "byteStart": 246
+                    }
+                },
+                {
+                    "features": [
+                        {
+                            "$type": "app.bsky.richtext.facet#tag",
+                            "tag": "KulturabbauVerhindern"
+                        }
+                    ],
+                    "index": {
+                        "byteEnd": 285,
+                        "byteStart": 263
+                    }
+                },
+                {
+                    "features": [
+                        {
+                            "$type": "app.bsky.richtext.facet#tag",
+                            "tag": "Berlin"
+                        }
+                    ],
+                    "index": {
+                        "byteEnd": 293,
+                        "byteStart": 286
+                    }
+                },
+                {
+                    "features": [
+                        {
+                            "$type": "app.bsky.richtext.facet#tag",
+                            "tag": "bemu"
+                        }
+                    ],
+                    "index": {
+                        "byteEnd": 299,
+                        "byteStart": 294
+                    }
+                }
+            ],
+            "langs": [
+                "de"
+            ],
+            "reply": {
+                "parent": {
+                    "cid": "bafyreidcqlbqeoigkyefzcb5x7kyvhtu2es3fjy7hykt7uf6q4tcuvbhbq",
+                    "uri": "at://did:plc:ouz2dpds3g4wmz3g4f7zpmol/app.bsky.feed.post/3ldgevpyjhk2d"
+                },
+                "root": {
+                    "cid": "bafyreidcqlbqeoigkyefzcb5x7kyvhtu2es3fjy7hykt7uf6q4tcuvbhbq",
+                    "uri": "at://did:plc:ouz2dpds3g4wmz3g4f7zpmol/app.bsky.feed.post/3ldgevpyjhk2d"
+                }
+            },
+            "text": "Beteiligt euch an den Aktionstagen von #BerlinIstKultur gegen die Kürzungen im Kulturbereich.\n\nGestaltung basics09 via Berliner Museumsverband e.V., mehr Statements unter: www.instagram.com/berlinermuse...\n\n#BerlinIstKultur #KürztDieKürzungen #BerlinIstMuseum #KulturabbauVerhindern #Berlin #bemu"
+        },
+        "cid": "bafyreifhva7lcs2izwlictj5tuqdqrdugbxwmswqy36eo2fqo4gt2yjate"
+    }
+}

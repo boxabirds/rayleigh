@@ -1,282 +1,32 @@
 {
     "$type": "app.bsky.feed.post",
-    "createdAt": "2024-12-13T10:58:19.586Z",
-    "embed": {
-        "$type": "app.bsky.embed.images",
-        "images": [
-            {
-                "alt": "",
-                "aspectRatio": {
-                    "height": 1051,
-                    "width": 1072
-                },
-                "image": {
-                    "$type": "blob",
-                    "ref": {
-                        "$link": "bafkreidflfixw57yvaxjfr2plpxy3pba5f33erdcgdv54ulgedwv6xgm7u"
-                    },
-                    "mimeType": "image/jpeg",
-                    "size": 647072
-                }
-            }
-        ]
-    },
+    "createdAt": "2024-12-13T10:58:19.695Z",
     "facets": [
         {
             "features": [
                 {
                     "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "magic"
+                    "tag": "Wordle"
                 }
             ],
             "index": {
-                "byteEnd": 93,
-                "byteStart": 87
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "faith"
-                }
-            ],
-            "index": {
-                "byteEnd": 100,
-                "byteStart": 94
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "gratitude"
-                }
-            ],
-            "index": {
-                "byteEnd": 111,
-                "byteStart": 101
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "moretocome"
-                }
-            ],
-            "index": {
-                "byteEnd": 123,
-                "byteStart": 112
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "riseandshine"
-                }
-            ],
-            "index": {
-                "byteEnd": 137,
-                "byteStart": 124
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "trustandbelieve"
-                }
-            ],
-            "index": {
-                "byteEnd": 154,
-                "byteStart": 138
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "create"
-                }
-            ],
-            "index": {
-                "byteEnd": 162,
-                "byteStart": 155
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "overcome"
-                }
-            ],
-            "index": {
-                "byteEnd": 172,
-                "byteStart": 163
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "trustthejourney"
-                }
-            ],
-            "index": {
-                "byteEnd": 189,
-                "byteStart": 173
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "positiveenergy"
-                }
-            ],
-            "index": {
-                "byteEnd": 205,
-                "byteStart": 190
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "light"
-                }
-            ],
-            "index": {
-                "byteEnd": 212,
-                "byteStart": 206
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "staytuned"
-                }
-            ],
-            "index": {
-                "byteEnd": 223,
-                "byteStart": 213
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "blessings"
-                }
-            ],
-            "index": {
-                "byteEnd": 234,
-                "byteStart": 224
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "defyinggravity"
-                }
-            ],
-            "index": {
-                "byteEnd": 250,
-                "byteStart": 235
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "thrive"
-                }
-            ],
-            "index": {
-                "byteEnd": 258,
-                "byteStart": 251
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "believe"
-                }
-            ],
-            "index": {
-                "byteEnd": 267,
-                "byteStart": 259
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "thebestisyettocome"
-                }
-            ],
-            "index": {
-                "byteEnd": 287,
-                "byteStart": 268
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "joy"
-                }
-            ],
-            "index": {
-                "byteEnd": 292,
-                "byteStart": 288
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "happiness"
-                }
-            ],
-            "index": {
-                "byteEnd": 303,
-                "byteStart": 293
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "sunrise"
-                }
-            ],
-            "index": {
-                "byteEnd": 312,
-                "byteStart": 304
-            }
-        },
-        {
-            "features": [
-                {
-                    "$type": "app.bsky.richtext.facet#tag",
-                    "tag": "feedyoursoul"
-                }
-            ],
-            "index": {
-                "byteEnd": 326,
-                "byteStart": 313
+                "byteEnd": 27,
+                "byteStart": 20
             }
         }
     ],
     "langs": [
         "en"
     ],
-    "text": "Believe...at Christmas time \u0026 all year round...😎🙏❤️☀️⭐🎄🎶💥🎆 #magic #faith #gratitude #moretocome #riseandshine #trustandbelieve #create #overcome #trustthejourney #positiveenergy #light #staytuned #blessings #defyinggravity #thrive #believe #thebestisyettocome #joy #happiness #sunrise #feedyoursoul"
+    "reply": {
+        "parent": {
+            "cid": "bafyreifruoafdfmr3nhdapok2gfgdcx4g6s2weamfiqqzanq2wuqm76iqa",
+            "uri": "at://did:plc:wjagahtqbmi3jwqfucf2rj6c/app.bsky.feed.post/3lczmx6ims22x"
+        },
+        "root": {
+            "cid": "bafyreibes76eekqysu5zoifh2bxzl5td5xrpqzywfcpnhwr2m6er23vzku",
+            "uri": "at://did:plc:ntvkkhmh3jxvtsfweam7udlx/app.bsky.feed.post/3lczjf2k65s2i"
+        }
+    },
+    "text": "lol looks more like #Wordle giving me the finger. 🤣🤣"
 }
