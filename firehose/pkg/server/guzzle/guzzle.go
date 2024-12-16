@@ -211,6 +211,10 @@ func (g *Guzzle) handleEvent(ctx context.Context, evt *models.Event) error {
 	//if evt.Commit.Collection != "app.bsky.feed.post" || evt.Commit.Operation != models.CommitOperationCreate && evt.Commit.Operation != models.CommitOperationDelete {
 	// TODO support deletion
 	if evt.Commit.Collection != "app.bsky.feed.post" || evt.Commit.Operation != models.CommitOperationCreate {
+		if evt.Commit.Operation == models.CommitOperationDelete {
+			// TODO support deletion
+			g.logger.Printf("Commit: TODO request to DELETE '%s' just logging for now", string(evt.Commit.RKey))
+		}
 		return nil
 	}
 

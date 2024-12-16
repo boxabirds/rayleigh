@@ -10,6 +10,7 @@ import (
 // API wrappers
 
 // Function to resolve DID to handle using Bluesky's API
+// https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=did:plc:watmxkxfjbwyxfuutganopfk
 func resolveDIDToHandle(client *xrpc.Client, did string) (string, error) {
 	ctx := context.Background()
 
