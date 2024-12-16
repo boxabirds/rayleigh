@@ -1,0 +1,32 @@
+{
+    "$type": "app.bsky.feed.post",
+    "createdAt": "2024-12-12T00:44:30.372Z",
+    "facets": [
+        {
+            "features": [
+                {
+                    "$type": "app.bsky.richtext.facet#tag",
+                    "tag": "persona5"
+                }
+            ],
+            "index": {
+                "byteEnd": 73,
+                "byteStart": 64
+            }
+        }
+    ],
+    "langs": [
+        "en"
+    ],
+    "reply": {
+        "parent": {
+            "cid": "bafyreibusopaacaaplgwrpnoiqavv55ttal3d7xz6fpoqtee6cp56uj2qa",
+            "uri": "at://did:plc:jmus2e6iyrbrn5g5slzffgwi/app.bsky.feed.post/3lcjtszdlfc2n"
+        },
+        "root": {
+            "cid": "bafyreibusopaacaaplgwrpnoiqavv55ttal3d7xz6fpoqtee6cp56uj2qa",
+            "uri": "at://did:plc:jmus2e6iyrbrn5g5slzffgwi/app.bsky.feed.post/3lcjtszdlfc2n"
+        }
+    },
+    "text": "Oh my god it's it's absolutely brilliant! You really nailed the #persona5 style 😎 please  can you upload the digital version as well? 🥹"
+}

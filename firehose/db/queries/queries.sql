@@ -30,8 +30,8 @@ SELECT * FROM posts WHERE id = $1;
 -- name: CreatePostWithTags :exec
 -- $6: tags
 WITH new_post AS (
-    INSERT INTO posts (post_id, creator_did, created_at, text, data)
-    VALUES ($1, $2, $3, $4, $5)
+    INSERT INTO posts (post_id, creator_did, created_at, text)
+    VALUES ($1, $2, $3, $4)
     RETURNING id
 ),
 inserted_tags AS (

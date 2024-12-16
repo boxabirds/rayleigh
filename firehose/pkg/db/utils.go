@@ -3,14 +3,15 @@ package db
 import (
 	"database/sql"
 	"encoding/json"
+	"firehose/pkg/db/query"
 	"fmt"
 	"log"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
-	"github.com/sqlc-dev/pqtype"
 )
 
 // GetPostgresURL loads environment variables and constructs a PostgreSQL connection URL
@@ -108,23 +109,10 @@ func CreateDatabase() bool {
 }
 
 // ExtractTags extracts tags from the data field
-func ExtractTags(data pqtype.NullRawMessage) []string {
-	var tags []string
-
-	// Check if data is valid before unmarshalling
-	if !data.Valid {
-		return tags
-	}
-
-	// Unmarshal the data field into a map
-	var dataMap map[string]interface{}
-	if err := json.Unmarshal(data.RawMessage, &dataMap); err != nil {
-		log.Printf("Failed to unmarshal data field: %v", err)
-		return tags
-	}
-	log.Println(dataMap)
+func ExtractTags(dataMap map[string]interface{}) []string {
 
 	// Extract tags from facets
+	var tags []string
 	if facets, ok := dataMap["facets"].([]interface{}); ok {
 		for _, facet := range facets {
 			if f, ok := facet.(map[string]interface{}); ok {
@@ -144,4 +132,33 @@ func ExtractTags(data pqtype.NullRawMessage) []string {
 	}
 
 	return tags
+}
+
+// ExtractPost parses the JSON data and returns a query.Post
+func ExtractPost(commitRecord []byte) (*query.CreatePostWithTagsParams, error) {
+
+	// Parse the entire data as a map
+	var postMap map[string]interface{}
+	if err := json.Unmarshal(commitRecord, &postMap); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
+	}
+
+	// Convert created_at time
+	createdAt, err := time.Parse("2006-01-02 15:04:05.999999-07:00", postMap["created_at"].(string))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse created_at: %w", err)
+	}
+
+	tags := ExtractTags(postMap)
+
+	postParams := query.CreatePostWithTagsParams{
+		PostID:     postMap["post_id"].(string),
+		CreatorDid: postMap["did"].(string),
+		Text:       postMap["text"].(string),
+		CreatedAt:  createdAt,
+		Tags:       tags,
+	}
+	fmt.Printf("Adding Post ID: %s\n", postParams.PostID)
+
+	return &postParams, nil
 }

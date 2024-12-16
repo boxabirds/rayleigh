@@ -6,8 +6,6 @@ package query
 
 import (
 	"time"
-
-	"github.com/sqlc-dev/pqtype"
 )
 
 type Post struct {
@@ -16,7 +14,6 @@ type Post struct {
 	CreatorDid string
 	CreatedAt  time.Time
 	Text       string
-	Data       pqtype.NullRawMessage
 }
 
 type PostTag struct {

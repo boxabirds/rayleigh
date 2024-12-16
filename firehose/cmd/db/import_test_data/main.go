@@ -4,17 +4,14 @@ import (
 	"bufio"
 	"context"
 	"database/sql"
-	"encoding/json"
 	"log"
 	"os"
 	"strings"
-	"time"
 
 	dbutils "firehose/pkg/db"
 	"firehose/pkg/db/query"
 
 	_ "github.com/lib/pq"
-	"github.com/sqlc-dev/pqtype"
 )
 
 func main() {
@@ -53,71 +50,20 @@ func main() {
 		// Strip trailing comma if present
 		line = strings.TrimRight(line, ",")
 
-		// Parse the entire line as a map
-		var postMap map[string]interface{}
-		if err := json.Unmarshal([]byte(line), &postMap); err != nil {
-			log.Printf("Failed to unmarshal line: %v", err)
-			continue
-		}
-
-		// Parse the nested data string
-		var dataMap map[string]interface{}
-		if err := json.Unmarshal([]byte(postMap["data"].(string)), &dataMap); err != nil {
-			log.Printf("Failed to unmarshal data string: %v", err)
-			continue
-		}
-
-		// Convert data map back to JSON
-		dataJSON, err := json.Marshal(dataMap)
+		// Use ExtractPost to process the entire line
+		post, err := dbutils.ExtractPost([]byte(line))
 		if err != nil {
-			log.Printf("Failed to marshal data map: %v", err)
+			log.Printf("failed to extract post: %v", err)
 			continue
 		}
 
-		// Parse created_at time
-		createdAt, err := time.Parse("2006-01-02 15:04:05.999999-07:00", postMap["created_at"].(string))
+		// Insert the post into the database
+		err = dbQueries.CreatePostWithTags(context.Background(), *post)
 		if err != nil {
-			log.Printf("Failed to parse created_at: %v", err)
+			log.Printf("failed to create post: %v", err)
 			continue
 		}
-
-		// Convert to query.Post
-		post := query.Post{
-			PostID:     postMap["post_id"].(string),
-			CreatorDid: postMap["did"].(string),
-			Text:       postMap["text"].(string),
-			CreatedAt:  createdAt,
-			Data: pqtype.NullRawMessage{
-				RawMessage: dataJSON,
-				Valid:      true,
-			},
-		}
-
-		// Check if post already exists
-		_, err = dbQueries.GetPostById(context.Background(), post.ID)
-		if err == nil {
-			log.Printf("Skipping duplicate post with ID %d", post.ID)
-			continue
-		} else if err != sql.ErrNoRows {
-			log.Printf("Error checking post existence: %v", err)
-			continue
-		}
-
-		// Extract tags using the utility function from db package
-		tags := dbutils.ExtractTags(post.Data)
-
-		log.Printf("Tags extracted: %v", tags)
-
-		// Use CreatePostWithTags to create posts
-		params := query.CreatePostWithTagsParams{
-			CreatorDid: post.CreatorDid,
-			Text:       post.Text,
-			CreatedAt:  post.CreatedAt,
-			Tags:       tags,
-		}
-		if err := dbQueries.CreatePostWithTags(context.Background(), params); err != nil {
-			log.Printf("Failed to create post with tags: %v", err)
-		}
+		log.Printf("Post successfully saved to db, ID: %s\n", post.PostID)
 	}
 
 	if err := scanner.Err(); err != nil {
