@@ -223,8 +223,7 @@ func (g *Guzzle) handleEvent(ctx context.Context, evt *models.Event) error {
 
 	// extract the tags
 	// data := pqtype.NullRawMessage{Valid: true, RawMessage: evt.Commit.Record}
-	commitRecord := []byte(evt.Commit.Record)
-	post, err := dbutils.ExtractPost(commitRecord)
+	post, err := dbutils.ExtractPost(evt)
 	if err != nil {
 		// golly it'd be nice of the logger library supported %w too right
 		g.logger.Printf("failed to extract post: %v", err)

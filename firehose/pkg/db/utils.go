@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"firehose/pkg/db/query"
+	"firehose/pkg/jetstream"
 	"fmt"
 	"log"
 	"net/url"
 	"os"
-	"time"
 
+	"github.com/bluesky-social/jetstream/pkg/models"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -108,25 +109,13 @@ func CreateDatabase() bool {
 	return true
 }
 
-// ExtractTags extracts tags from the data field
-func ExtractTags(dataMap map[string]interface{}) []string {
+func extractTags(facets []jetstream.Facet) []string {
+	tags := make([]string, 0)
 
-	// Extract tags from facets
-	var tags []string
-	if facets, ok := dataMap["facets"].([]interface{}); ok {
-		for _, facet := range facets {
-			if f, ok := facet.(map[string]interface{}); ok {
-				if features, ok := f["features"].([]interface{}); ok {
-					for _, feature := range features {
-						if feat, ok := feature.(map[string]interface{}); ok {
-							if featType, ok := feat["$type"].(string); ok && featType == "app.bsky.richtext.facet#tag" {
-								if tag, ok := feat["tag"].(string); ok {
-									tags = append(tags, tag)
-								}
-							}
-						}
-					}
-				}
+	for _, facet := range facets {
+		for _, feature := range facet.Features {
+			if feature.Type == "app.bsky.richtext.facet#tag" && feature.Tag != "" {
+				tags = append(tags, feature.Tag)
 			}
 		}
 	}
@@ -135,33 +124,22 @@ func ExtractTags(dataMap map[string]interface{}) []string {
 }
 
 // ExtractPost parses the JSON data and returns a query.Post
-func ExtractPost(commitRecord []byte) (*query.CreatePostWithTagsParams, error) {
+func ExtractPost(evt *models.Event) (*query.CreatePostWithTagsParams, error) {
 
-	// Parse the entire data as a map
-	var postMap map[string]interface{}
-	if err := json.Unmarshal(commitRecord, &postMap); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
+	var post jetstream.PostCommitRecord
+	// Unmarshal the data into the Post struct
+
+	if err := json.Unmarshal(evt.Commit.Record, &post); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal post commit data: %w", err)
 	}
 
-	// print out the postMap
-	data, err := json.MarshalIndent(postMap, "", "  ")
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal postMap: %w", err)
-	}
-	fmt.Printf("PostMap: %s\n", string(data))
-
-	createdAt, err := time.Parse("2006-01-02 15:04:05.999999-07:00", postMap["created_at"].(string))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse created_at: %w", err)
-	}
-
-	tags := ExtractTags(postMap)
+	tags := extractTags(post.Facets)
 
 	postParams := query.CreatePostWithTagsParams{
-		PostID:     postMap["post_id"].(string),
-		CreatorDid: postMap["did"].(string),
-		Text:       postMap["text"].(string),
-		CreatedAt:  createdAt,
+		PostID:     evt.Commit.RKey,
+		CreatorDid: evt.Did,
+		Text:       post.Text,
+		CreatedAt:  post.CreatedAt,
 		Tags:       tags,
 	}
 	fmt.Printf("Adding Post ID: %s\n", postParams.PostID)
