@@ -3,9 +3,9 @@ package guzzle
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	dbutils "firehose/pkg/db"
 	"firehose/pkg/db/query"
+	"firehose/pkg/jetstream"
 	"fmt"
 	"io"
 	"log"
@@ -214,29 +214,46 @@ func (g *Guzzle) handleEvent(ctx context.Context, evt *models.Event) error {
 	}
 
 	// print the commit record
-	evtJSON, err := json.Marshal(evt)
-	if err != nil {
-		g.logger.Printf("failed to marshal event: %v", err)
-		return err
-	}
-	g.logger.Printf("Commit: %s", string(evtJSON))
+	// evtJSON, err := json.Marshal(evt)
+	// if err != nil {
+	// 	g.logger.Printf("failed to marshal event: %v", err)
+	// 	return err
+	// }
+	//g.logger.Printf("Commit: %s", string(evtJSON))
 
 	// extract the tags
 	// data := pqtype.NullRawMessage{Valid: true, RawMessage: evt.Commit.Record}
-	post, err := dbutils.ExtractPost(evt)
+	post, err := jetstream.ExtractPost(evt)
 	if err != nil {
 		// golly it'd be nice of the logger library supported %w too right
 		g.logger.Printf("failed to extract post: %v", err)
 		return err
 	}
 
+	// now check we have a qualifying post: we need to have at least one tag and no reply
+	if len(post.Tags) == 0 || post.Reply != nil {
+		//g.logger.Printf("Post does not meet criteria for persistence (tags: %d, reply: %v)", len(post.Tags), post.Reply != nil)
+		return nil
+	}
+
+	// This mapping was HOURS of work to figure out.
+	// it'd be nice if the jetstream library exposed the post commit interfaces
+	// but as of Dec 2024 it didn't
+	postParams := query.CreatePostWithTagsParams{
+		PostID:     evt.Commit.RKey,
+		CreatorDid: evt.Did,
+		Text:       post.Text,
+		CreatedAt:  post.CreatedAt,
+		Tags:       post.Tags,
+	}
+
 	dbQueries := query.New(g.db)
-	err = dbQueries.CreatePostWithTags(ctx, *post)
+	err = dbQueries.CreatePostWithTags(ctx, postParams)
 	if err != nil {
 		g.logger.Printf("failed to create post: %v", err)
 		return err
 	}
-	g.logger.Printf("Post successfully saved to db, ID: %s\n", post.PostID)
+	g.logger.Printf("Post successfully saved to db, ID: %s\n", evt.Commit.RKey)
 	return nil
 }
 

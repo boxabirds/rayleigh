@@ -1,6 +1,12 @@
 package jetstream
 
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/bluesky-social/jetstream/pkg/models"
+)
 
 type PostCommitRecord struct {
 	Type      string    `json:"$type"`
@@ -9,6 +15,7 @@ type PostCommitRecord struct {
 	Langs     []string  `json:"langs"`
 	Reply     *Reply    `json:"reply,omitempty"` // Optional field
 	Text      string    `json:"text"`
+	Tags      []string  // this is a calculated field derived from the Facets
 }
 
 type Ref struct {
@@ -39,4 +46,32 @@ type Reply struct {
 type CIDURI struct {
 	CID string `json:"cid"`
 	URI string `json:"uri"`
+}
+
+func ExtractTags(facets []Facet) []string {
+	tags := make([]string, 0)
+
+	for _, facet := range facets {
+		for _, feature := range facet.Features {
+			if feature.Type == "app.bsky.richtext.facet#tag" && feature.Tag != "" {
+				tags = append(tags, feature.Tag)
+			}
+		}
+	}
+
+	return tags
+}
+
+func ExtractPost(evt *models.Event) (*PostCommitRecord, error) {
+
+	var post PostCommitRecord
+	// Unmarshal the data into the Post struct
+
+	if err := json.Unmarshal(evt.Commit.Record, &post); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal post commit data: %w", err)
+	}
+
+	post.Tags = ExtractTags(post.Facets)
+	return &post, nil
+
 }

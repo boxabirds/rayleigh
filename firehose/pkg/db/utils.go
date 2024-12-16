@@ -2,15 +2,11 @@ package db
 
 import (
 	"database/sql"
-	"encoding/json"
-	"firehose/pkg/db/query"
-	"firehose/pkg/jetstream"
 	"fmt"
 	"log"
 	"net/url"
 	"os"
 
-	"github.com/bluesky-social/jetstream/pkg/models"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -107,42 +103,4 @@ func CreateDatabase() bool {
 
 	log.Printf("Database %s created successfully.", os.Getenv("DB_NAME"))
 	return true
-}
-
-func extractTags(facets []jetstream.Facet) []string {
-	tags := make([]string, 0)
-
-	for _, facet := range facets {
-		for _, feature := range facet.Features {
-			if feature.Type == "app.bsky.richtext.facet#tag" && feature.Tag != "" {
-				tags = append(tags, feature.Tag)
-			}
-		}
-	}
-
-	return tags
-}
-
-// ExtractPost parses the JSON data and returns a query.Post
-func ExtractPost(evt *models.Event) (*query.CreatePostWithTagsParams, error) {
-
-	var post jetstream.PostCommitRecord
-	// Unmarshal the data into the Post struct
-
-	if err := json.Unmarshal(evt.Commit.Record, &post); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal post commit data: %w", err)
-	}
-
-	tags := extractTags(post.Facets)
-
-	postParams := query.CreatePostWithTagsParams{
-		PostID:     evt.Commit.RKey,
-		CreatorDid: evt.Did,
-		Text:       post.Text,
-		CreatedAt:  post.CreatedAt,
-		Tags:       tags,
-	}
-	fmt.Printf("Adding Post ID: %s\n", postParams.PostID)
-
-	return &postParams, nil
 }
