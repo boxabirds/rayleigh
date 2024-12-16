@@ -1,20 +1,4 @@
-{
-    "$type": "app.bsky.feed.post",
-    "createdAt": "2024-12-15T17:34:40.793Z",
-    "langs": ["en"],
-    "reply": {
-      "parent": {
-        "cid": "bafyreifsphpuaohc4ye3uiznm4ehjt32agfcslqapimn5s5u22bikt3guu",
-        "uri": "at://did:plc:jdvc5g2rt7lifiguvvk4gjw3/app.bsky.feed.post/3ldedwnydus2m"
-      },
-      "root": {
-        "cid": "bafyreigtsepg6osjm45yadczl5jzsmlrtpinqv3ixde3a2ijdo4ptuzeny",
-        "uri": "at://did:plc:anx4lwm5gvnh4lpbgmfzkrb3/app.bsky.feed.post/3ldbo6l5f5c27"
-      }
-    },
-    "text": "ofc some are dead too like my interest has died on them hhh"
-  },
-  {
+{  {
     "$type": "app.bsky.feed.post",
     "createdAt": "2024-12-15T17:34:39.024Z",
     "embed": {

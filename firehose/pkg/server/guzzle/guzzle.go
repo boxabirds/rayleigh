@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	dbutils "firehose/pkg/db"
+	"firehose/pkg/db/query"
 	"fmt"
 	"io"
 	"log"
@@ -16,7 +17,6 @@ import (
 	"github.com/bluesky-social/jetstream/pkg/client"
 	"github.com/bluesky-social/jetstream/pkg/client/schedulers/sequential"
 	"github.com/bluesky-social/jetstream/pkg/models"
-	"github.com/sqlc-dev/pqtype"
 )
 
 const (
@@ -212,18 +212,25 @@ func (g *Guzzle) handleEvent(ctx context.Context, evt *models.Event) error {
 		return nil
 	}
 
-	// extract the tags
-	data := pqtype.NullRawMessage{Valid: true, RawMessage: evt.Commit.Record}
+	// print the commit record
 
-	tags := dbutils.ExtractTags(data)
-	if len(tags) == 0 {
-		//g.logger.Println("No tags found, skipping post")
-		return nil
+	// extract the tags
+	// data := pqtype.NullRawMessage{Valid: true, RawMessage: evt.Commit.Record}
+	commitRecord := []byte(evt.Commit.Record)
+	post, err := dbutils.ExtractPost(commitRecord)
+	if err != nil {
+		// golly it'd be nice of the logger library supported %w too right
+		g.logger.Printf("failed to extract post: %v", err)
+		return err
 	}
 
-	g.logger.Printf("Tags extracted: %v", tags)
-
-	// now add to db
+	dbQueries := query.New(g.db)
+	err = dbQueries.CreatePostWithTags(ctx, *post)
+	if err != nil {
+		g.logger.Printf("failed to create post: %v", err)
+		return err
+	}
+	g.logger.Printf("Post successfully saved to db, ID: %s\n", post.PostID)
 	return nil
 }
 

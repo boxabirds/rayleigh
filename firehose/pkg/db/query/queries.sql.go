@@ -10,25 +10,24 @@ import (
 	"time"
 
 	"github.com/lib/pq"
-	"github.com/sqlc-dev/pqtype"
 )
 
 const createPostWithTags = `-- name: CreatePostWithTags :exec
 WITH new_post AS (
-    INSERT INTO posts (post_id, creator_did, created_at, text, data)
-    VALUES ($1, $2, $3, $4, $5)
+    INSERT INTO posts (post_id, creator_did, created_at, text)
+    VALUES ($1, $2, $3, $4)
     RETURNING id
 ),
 inserted_tags AS (
     INSERT INTO tags (name)
-    SELECT unnest($6::text[])
+    SELECT unnest($5::text[])
     ON CONFLICT (name) DO NOTHING
     RETURNING id, name
 ),
 existing_tags AS (
     SELECT id, name
     FROM tags
-    WHERE name = ANY($6::text[])
+    WHERE name = ANY($5::text[])
 )
 INSERT INTO post_tags (post_id, tag_id)
 SELECT new_post.id, tag_id
@@ -45,7 +44,6 @@ type CreatePostWithTagsParams struct {
 	CreatorDid string
 	CreatedAt  time.Time
 	Text       string
-	Data       pqtype.NullRawMessage
 	Tags       []string
 }
 
@@ -56,14 +54,13 @@ func (q *Queries) CreatePostWithTags(ctx context.Context, arg CreatePostWithTags
 		arg.CreatorDid,
 		arg.CreatedAt,
 		arg.Text,
-		arg.Data,
 		pq.Array(arg.Tags),
 	)
 	return err
 }
 
 const getPostById = `-- name: GetPostById :one
-SELECT id, post_id, creator_did, created_at, text, data FROM posts WHERE id = $1
+SELECT id, post_id, creator_did, created_at, text FROM posts WHERE id = $1
 `
 
 func (q *Queries) GetPostById(ctx context.Context, id int32) (Post, error) {
@@ -75,13 +72,12 @@ func (q *Queries) GetPostById(ctx context.Context, id int32) (Post, error) {
 		&i.CreatorDid,
 		&i.CreatedAt,
 		&i.Text,
-		&i.Data,
 	)
 	return i, err
 }
 
 const getRecentPostsByTagAndCreator = `-- name: GetRecentPostsByTagAndCreator :many
-SELECT p.id, p.post_id, p.creator_did, p.created_at, p.text, p.data
+SELECT p.id, p.post_id, p.creator_did, p.created_at, p.text
 FROM posts p
 JOIN post_tags pt ON p.id = pt.post_id
 JOIN tags t ON pt.tag_id = t.id
@@ -119,7 +115,6 @@ func (q *Queries) GetRecentPostsByTagAndCreator(ctx context.Context, arg GetRece
 			&i.CreatorDid,
 			&i.CreatedAt,
 			&i.Text,
-			&i.Data,
 		); err != nil {
 			return nil, err
 		}
@@ -157,7 +152,11 @@ type GetRecentPostsByTagsRow struct {
 	TagName   string
 }
 
+// params: named
 // $1: TagNames
+// $2: Before
+// $3: Limit
+// $4: Offset
 func (q *Queries) GetRecentPostsByTags(ctx context.Context, arg GetRecentPostsByTagsParams) ([]GetRecentPostsByTagsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getRecentPostsByTags,
 		pq.Array(arg.Column1),
