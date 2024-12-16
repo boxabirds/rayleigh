@@ -1,59 +1,47 @@
 package bluesky
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"log"
-	"net/http"
-	"net/url"
+
+	"github.com/bluesky-social/indigo/xrpc"
 )
 
 // API wrappers
 
 // Function to resolve DID to handle using Bluesky's API
-func resolveDIDToHandle(did string) (string, error) {
-	apiURL := "https://public.bsky.social/xrpc/com.atproto.identity.resolveHandle"
-	params := url.Values{}
-	params.Add("did", did)
-	apiURL += "?" + params.Encode()
+func resolveDIDToHandle(client *xrpc.Client, did string) (string, error) {
+	ctx := context.Background()
 
-	resp, err := http.Get(apiURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to make API request: %w", err)
-	}
-	defer resp.Body.Close()
+	// Procedure name (mapped to the endpoint `/xrpc/com.atproto.identity.resolveHandle`)
+	procedure := "com.atproto.identity.resolveHandle"
 
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("API request failed with status: %s", resp.Status)
+	// Authentication token (AccessJwt)
+	authToken := client.Auth.AccessJwt
+	if authToken == "" {
+		return "", fmt.Errorf("client.Auth.AccessJwt is empty; ensure the client is authenticated")
 	}
 
+	// Query parameters
+	params := map[string]interface{}{
+		"did": did,
+	}
+
+	// Result structure to hold the API response
 	var result struct {
 		Handle string `json:"handle"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", fmt.Errorf("failed to decode API response: %w", err)
+
+	// Make the authenticated request
+	if err := client.Do(ctx, xrpc.Query, procedure, authToken, params, nil, &result); err != nil {
+		return "", fmt.Errorf("failed to resolve DID to handle: %w", err)
 	}
 
+	// Return the handle from the response
 	return result.Handle, nil
 }
 
 // Function to construct the post URL
 func constructPostURL(handle, postID string) string {
 	return fmt.Sprintf("https://bsky.app/profile/%s/post/%s", handle, postID)
-}
-
-func main() {
-	did := "did:plc:exampledid"
-	postID := "examplepostid"
-
-	// Step 1: Resolve the DID to a handle
-	handle, err := resolveDIDToHandle(did)
-	if err != nil {
-		log.Fatalf("Error resolving DID to handle: %v", err)
-	}
-
-	// Step 2: Construct the post URL
-	postURL := constructPostURL(handle, postID)
-
-	fmt.Printf("Post URL: %s\n", postURL)
 }
