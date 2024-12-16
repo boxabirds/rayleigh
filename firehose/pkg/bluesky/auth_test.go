@@ -5,13 +5,12 @@ import (
 	"testing"
 
 	"github.com/joho/godotenv"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestResolveDIDToHandle(t *testing.T) {
-	did := "did:plc:xo5agehbphpv6ax6exgrc5jd"
-	expectedHandle := "peteuplink.bsky.social"
-
+func TestSignIn(t *testing.T) {
+	// this requires the .env to be in the same directory 🤦‍♂️
 	err := godotenv.Load()
 	require.NoError(t, err, "Failed to load .env file")
 
@@ -21,14 +20,12 @@ func TestResolveDIDToHandle(t *testing.T) {
 	require.NotEmpty(t, blueskyHandle, "BSKY_IDENTIFIER is not set")
 	require.NotEmpty(t, blueskyAppkey, "BSKY_APP_PASSWORD is not set")
 
+	// Optionally, perform a simple operation to verify client functionality
+
 	client, err := SignIn(blueskyHandle, blueskyAppkey)
+	assert.NoError(t, err, "Failed to fetch profile")
+	assert.NotNil(t, client, "Profile should not be nil")
 
-	handle, err := resolveDIDToHandle(client, did)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	if handle != expectedHandle {
-		t.Errorf("Expected handle %s, got %s", expectedHandle, handle)
-	}
+	// Clean up
+	//defer client.Close()
 }

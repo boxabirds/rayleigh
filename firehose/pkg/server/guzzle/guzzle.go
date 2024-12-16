@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"math"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -253,7 +254,7 @@ func (g *Guzzle) handleEvent(ctx context.Context, evt *models.Event) error {
 		g.logger.Printf("failed to create post: %v", err)
 		return err
 	}
-	g.logger.Printf("Post successfully saved to db, ID: %s\n", evt.Commit.RKey)
+	g.logger.Printf("Post saved to db, ID: %s, text '%s'", evt.Commit.RKey, strings.ReplaceAll(post.Text, "\n", " "))
 	return nil
 }
 
@@ -289,11 +290,6 @@ func (g *Guzzle) logConnectionStatus(connected bool, url string) {
 		status = "Failed to connect to"
 	}
 
-	query := `
-		INSERT INTO connection_logs (timestamp, status, url)
-		VALUES (?, ?, ?)
-	`
-	g.db.Exec(query, time.Now(), status, url)
 	g.logger.Printf("Connection status: %s %s", status, url)
 }
 
