@@ -308,9 +308,10 @@ func (g *Guzzle) Close() error {
 	g.logger.Println("Shutting down guzzle service...")
 
 	g.mu.RLock()
-	g.logger.Printf("Final Metrics - Total Entries: %d, Total Space Used: %s",
+	g.logger.Printf("Final Metrics - Total Entries: %d, Total Space Used: %s, Cursor Time: %s",
 		g.metrics.entriesLogged,
-		formatBytes(g.metrics.spaceUsed))
+		formatBytes(g.metrics.spaceUsed),
+		time.Now().Format(time.RFC3339))
 	g.mu.RUnlock()
 
 	if err := g.db.Close(); err != nil {
