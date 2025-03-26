@@ -76,8 +76,8 @@ func (q *Queries) GetPostById(ctx context.Context, id int32) (Post, error) {
 	return i, err
 }
 
-const getRecentPostsByTagAndCreator = `-- name: GetRecentPostsByTagAndCreator :many
-SELECT p.id, p.post_id, p.creator_did, p.created_at, p.text
+const getRecentRootPostsByTagAndCreator = `-- name: GetRecentRootPostsByTagAndCreator :many
+SELECT p.id, p.post_id, p.creator_did, p.created_at, p.text, t.name AS tag_name
 FROM posts p
 JOIN post_tags pt ON p.id = pt.post_id
 JOIN tags t ON pt.tag_id = t.id
@@ -85,36 +85,48 @@ WHERE t.name = ANY($1::text[])
   AND p.created_at >= $2
   AND p.creator_did = ANY($3::text[])
 ORDER BY p.created_at DESC
-LIMIT $4
+LIMIT $5 OFFSET $4
 `
 
-type GetRecentPostsByTagAndCreatorParams struct {
-	Column1   []string
-	CreatedAt time.Time
-	Column3   []string
-	Limit     int32
+type GetRecentRootPostsByTagAndCreatorParams struct {
+	TagNames     []string
+	CreatedAfter time.Time
+	CreatorDids  []string
+	RowOffset    int32
+	RowLimit     int32
 }
 
-func (q *Queries) GetRecentPostsByTagAndCreator(ctx context.Context, arg GetRecentPostsByTagAndCreatorParams) ([]Post, error) {
-	rows, err := q.db.QueryContext(ctx, getRecentPostsByTagAndCreator,
-		pq.Array(arg.Column1),
-		arg.CreatedAt,
-		pq.Array(arg.Column3),
-		arg.Limit,
+type GetRecentRootPostsByTagAndCreatorRow struct {
+	ID         int32
+	PostID     string
+	CreatorDid string
+	CreatedAt  time.Time
+	Text       string
+	TagName    string
+}
+
+func (q *Queries) GetRecentRootPostsByTagAndCreator(ctx context.Context, arg GetRecentRootPostsByTagAndCreatorParams) ([]GetRecentRootPostsByTagAndCreatorRow, error) {
+	rows, err := q.db.QueryContext(ctx, getRecentRootPostsByTagAndCreator,
+		pq.Array(arg.TagNames),
+		arg.CreatedAfter,
+		pq.Array(arg.CreatorDids),
+		arg.RowOffset,
+		arg.RowLimit,
 	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Post
+	var items []GetRecentRootPostsByTagAndCreatorRow
 	for rows.Next() {
-		var i Post
+		var i GetRecentRootPostsByTagAndCreatorRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.PostID,
 			&i.CreatorDid,
 			&i.CreatedAt,
 			&i.Text,
+			&i.TagName,
 		); err != nil {
 			return nil, err
 		}
@@ -129,49 +141,55 @@ func (q *Queries) GetRecentPostsByTagAndCreator(ctx context.Context, arg GetRece
 	return items, nil
 }
 
-const getRecentPostsByTags = `-- name: GetRecentPostsByTags :many
-SELECT DISTINCT p.id, p.created_at, t.name AS tag_name
+const getRecentRootPostsByTags = `-- name: GetRecentRootPostsByTags :many
+SELECT DISTINCT p.id, p.post_id, p.creator_did, p.created_at, p.text, t.name AS tag_name
 FROM posts p
 JOIN post_tags pt ON p.id = pt.post_id
 JOIN tags t ON pt.tag_id = t.id
-WHERE t.name = ANY($1::text[]) AND p.created_at < $2
+WHERE t.name = ANY($1::text[]) 
+  AND p.created_at >= $2
 ORDER BY p.created_at DESC
-LIMIT $3 OFFSET $4
+LIMIT $4 OFFSET $3
 `
 
-type GetRecentPostsByTagsParams struct {
-	Column1   []string
-	CreatedAt time.Time
-	Limit     int32
-	Offset    int32
+type GetRecentRootPostsByTagsParams struct {
+	TagNames     []string
+	CreatedAfter time.Time
+	RowOffset    int32
+	RowLimit     int32
 }
 
-type GetRecentPostsByTagsRow struct {
-	ID        int32
-	CreatedAt time.Time
-	TagName   string
+type GetRecentRootPostsByTagsRow struct {
+	ID         int32
+	PostID     string
+	CreatorDid string
+	CreatedAt  time.Time
+	Text       string
+	TagName    string
 }
 
-// params: named
-// $1: TagNames
-// $2: Before
-// $3: Limit
-// $4: Offset
-func (q *Queries) GetRecentPostsByTags(ctx context.Context, arg GetRecentPostsByTagsParams) ([]GetRecentPostsByTagsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getRecentPostsByTags,
-		pq.Array(arg.Column1),
-		arg.CreatedAt,
-		arg.Limit,
-		arg.Offset,
+func (q *Queries) GetRecentRootPostsByTags(ctx context.Context, arg GetRecentRootPostsByTagsParams) ([]GetRecentRootPostsByTagsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getRecentRootPostsByTags,
+		pq.Array(arg.TagNames),
+		arg.CreatedAfter,
+		arg.RowOffset,
+		arg.RowLimit,
 	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetRecentPostsByTagsRow
+	var items []GetRecentRootPostsByTagsRow
 	for rows.Next() {
-		var i GetRecentPostsByTagsRow
-		if err := rows.Scan(&i.ID, &i.CreatedAt, &i.TagName); err != nil {
+		var i GetRecentRootPostsByTagsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PostID,
+			&i.CreatorDid,
+			&i.CreatedAt,
+			&i.Text,
+			&i.TagName,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

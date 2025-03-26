@@ -11,4 +11,4 @@ vite.config.ts.*
 playwright-report/**
 
 firehose/db/test/data/samples/large/**
-firehose/log/**
+firehose/logs/**

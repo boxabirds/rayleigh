@@ -1,28 +1,24 @@
 
--- name: GetRecentPostsByTags :many
--- params: named
--- $1: TagNames
--- $2: Before
--- $3: Limit
--- $4: Offset
-SELECT DISTINCT p.id, p.created_at, t.name AS tag_name
+-- name: GetRecentRootPostsByTags :many
+SELECT DISTINCT p.*, t.name AS tag_name
 FROM posts p
 JOIN post_tags pt ON p.id = pt.post_id
 JOIN tags t ON pt.tag_id = t.id
-WHERE t.name = ANY($1::text[]) AND p.created_at < $2
+WHERE t.name = ANY(@tag_names::text[]) 
+  AND p.created_at >= @created_after
 ORDER BY p.created_at DESC
-LIMIT $3 OFFSET $4;
+LIMIT @row_limit OFFSET @row_offset;
 
--- name: GetRecentPostsByTagAndCreator :many
-SELECT p.*
+-- name: GetRecentRootPostsByTagAndCreator :many
+SELECT p.*, t.name AS tag_name
 FROM posts p
 JOIN post_tags pt ON p.id = pt.post_id
 JOIN tags t ON pt.tag_id = t.id
-WHERE t.name = ANY($1::text[])
-  AND p.created_at >= $2
-  AND p.creator_did = ANY($3::text[])
+WHERE t.name = ANY(@tag_names::text[])
+  AND p.created_at >= @created_after
+  AND p.creator_did = ANY(@creator_dids::text[])
 ORDER BY p.created_at DESC
-LIMIT $4;
+LIMIT @row_limit OFFSET @row_offset;
 
 -- name: GetPostById :one
 SELECT * FROM posts WHERE id = $1;
